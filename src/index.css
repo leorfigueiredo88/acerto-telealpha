@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/* ============================================================
+   TOKENS DE MARCA — Telealpha
+   Única fonte de cores e tipografia do app. Não solte hex novo em
+   componentes: adicione aqui (uma var(--ta-*) ou uma entrada no
+   @theme) e reaproveite via classe utilitária ou var(--...).
+   navy #1D2040 · azul #1B7EAD (cores extraídas da logo oficial)
+   ============================================================ */
+@theme {
+  --color-brand: #1d2040;
+  --color-accent: #1b7ead;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+:root {
+  --ta-navy: #1d2040;
+  --ta-navy-claro: #2b3160; /* hover de botão navy */
+  --ta-blue: #1b7ead;
+  --ta-blue-escuro: #22699b; /* hover de botão azul */
+  --ta-blue-claro: #eaf4fa; /* hover de botão outline / fundo suave */
+  --ta-blue-borda: #8fc2dd; /* hover de borda (cards clicáveis) */
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+/* ---------- utilitários de marca (compostos — não são gerados pelo Tailwind) ---------- */
+.bg-brand { background-color: var(--ta-navy); }
+.bg-accent { background-color: var(--ta-blue); }
+.text-brand { color: var(--ta-navy); }
+.text-accent { color: var(--ta-blue); }
+
+.btn-brand { background-color: var(--ta-navy); color: #fff; transition: background-color .15s; }
+.btn-brand:hover:enabled { background-color: var(--ta-navy-claro); }
+.btn-brand:disabled { opacity: .4; cursor: not-allowed; }
+
+.btn-accent { background-color: var(--ta-blue); color: #fff; transition: background-color .15s; }
+.btn-accent:hover { background-color: var(--ta-blue-escuro); }
+
+.btn-accent-outline { border: 1px solid var(--ta-blue); color: var(--ta-blue); transition: background-color .15s; }
+.btn-accent-outline:hover { background-color: var(--ta-blue-claro); }
+
+.focus-brand:focus { border-color: var(--ta-blue); box-shadow: 0 0 0 3px rgba(27, 126, 173, .15); outline: none; }
+
+.tab-active { background-color: var(--ta-navy); color: #fff; }
+.bar-accent { background-color: var(--ta-blue); }
+.hover-accent-border:hover { border-color: var(--ta-blue-borda); }
+
+@media print {
+  body * { visibility: hidden !important; }
+  #relatorio-acerto, #relatorio-acerto * { visibility: visible !important; }
+  #relatorio-acerto { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; }
+  .no-print { display: none !important; }
+}
