@@ -1,14 +1,19 @@
-import { useEffect } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useData } from "../../context/DataContext";
 import { cores, fmtData, fontes } from "../../theme";
+import { alertar } from "../../lib/alertar";
 import { ViagemBadge } from "../../components/Badge";
 import PainelParticipante from "../../components/PainelParticipante";
 
 export default function ViagemDetalheScreen({ route, navigation }) {
   const { viagemId } = route.params;
-  const { viagens, usuarios, marcarCreditosVistos } = useData();
+  const { viagens, usuarios, marcarCreditosVistos, atualizarDataFimViagem } = useData();
+  const [editandoFim, setEditandoFim] = useState(false);
+  const [novaFim, setNovaFim] = useState(null);
+  const [salvandoFim, setSalvandoFim] = useState(false);
 
   useEffect(() => {
     marcarCreditosVistos(viagemId);
@@ -17,6 +22,18 @@ export default function ViagemDetalheScreen({ route, navigation }) {
 
   const v = viagens.find((x) => x.id === viagemId);
   if (!v) return null;
+
+  const salvarNovaFim = async (data) => {
+    setSalvandoFim(true);
+    try {
+      await atualizarDataFimViagem(v.id, data);
+      setEditandoFim(false);
+    } catch (e) {
+      alertar("Não foi possível salvar", e.message);
+    } finally {
+      setSalvandoFim(false);
+    }
+  };
 
   const nomes = v.participantes.map((p) => usuarios.find((u) => u.id === p.usuarioId)?.nome).filter(Boolean).join(", ");
 
@@ -33,7 +50,42 @@ export default function ViagemDetalheScreen({ route, navigation }) {
             <View style={styles.metaLinha}>
               <MaterialCommunityIcons name="calendar-range" size={12} color={cores.textoMuted} />
               <Text style={styles.metaTexto}>{fmtData(v.inicio)} a {fmtData(v.fim)}</Text>
+              <TouchableOpacity
+                onPress={() => { setNovaFim(v.fim); setEditandoFim(true); }}
+                style={styles.botaoEditarFim}
+                disabled={salvandoFim}
+              >
+                <MaterialCommunityIcons name="pencil-outline" size={12} color={cores.azul} />
+              </TouchableOpacity>
             </View>
+            {editandoFim && (
+              <View style={styles.editorFim}>
+                <DateTimePicker
+                  value={new Date(`${novaFim}T12:00:00`)}
+                  mode="date"
+                  minimumDate={new Date(`${v.inicio}T12:00:00`)}
+                  display={Platform.OS === "ios" ? "inline" : "default"}
+                  onChange={(event, d) => {
+                    if (Platform.OS === "android") {
+                      setEditandoFim(false);
+                      if (event.type === "set" && d) salvarNovaFim(d.toISOString().slice(0, 10));
+                      return;
+                    }
+                    if (d) setNovaFim(d.toISOString().slice(0, 10));
+                  }}
+                />
+                {Platform.OS === "ios" && (
+                  <View style={styles.editorFimAcoes}>
+                    <TouchableOpacity onPress={() => setEditandoFim(false)} style={styles.botaoCancelarFim}>
+                      <Text style={styles.botaoCancelarFimTexto}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => salvarNovaFim(novaFim)} disabled={salvandoFim} style={styles.botaoSalvarFim}>
+                      <Text style={styles.botaoSalvarFimTexto}>{salvandoFim ? "Salvando…" : "Salvar nova data"}</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
             {!!nomes && (
               <View style={styles.metaLinha}>
                 <MaterialCommunityIcons name="account-group" size={12} color={cores.textoMuted} />
@@ -87,4 +139,11 @@ const styles = StyleSheet.create({
   secao: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.negrito, textTransform: "uppercase", color: cores.textoMuted, letterSpacing: 0.3 },
   linkIncluir: { flexDirection: "row", alignItems: "center", gap: 4 },
   linkIncluirTexto: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.medio, color: cores.azul },
+  botaoEditarFim: { padding: 2 },
+  editorFim: { marginTop: 6 },
+  editorFimAcoes: { flexDirection: "row", gap: 8, marginTop: 8 },
+  botaoCancelarFim: { flex: 1, alignItems: "center", borderWidth: 1, borderColor: cores.borda, borderRadius: 10, paddingVertical: 10 },
+  botaoCancelarFimTexto: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.medio, color: cores.textoMuted },
+  botaoSalvarFim: { flex: 1, alignItems: "center", backgroundColor: cores.navy, borderRadius: 10, paddingVertical: 10 },
+  botaoSalvarFimTexto: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.negrito, color: cores.branco },
 });

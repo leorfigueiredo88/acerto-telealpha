@@ -172,6 +172,25 @@ export async function criarViagem({ nome, destino, inicio, fim, participantes, c
   return viagem.id;
 }
 
+// Gestor estende (ou corrige) a data de término de uma viagem já criada —
+// útil quando a viagem acaba durando mais do que o previsto.
+//
+// Usa .select() pra forçar o Postgres a devolver a linha alterada: sem
+// isso, um UPDATE bloqueado pela RLS (ex.: usuário não é gestor, ou não
+// está ativo) retorna sucesso silencioso — 0 linhas afetadas, sem erro
+// — e a UI acha que salvou quando na verdade nada mudou no banco.
+export async function atualizarDataFimViagem(viagemId, novaDataFim) {
+  const { data, error } = await supabase
+    .from("viagens")
+    .update({ data_fim: novaDataFim })
+    .eq("id", viagemId)
+    .select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Não foi possível atualizar a viagem — confira se você está logado como gestor.");
+  }
+}
+
 export async function criarCredito({ viagemId, usuarioId, tipo, valor, descricao, lancadoPor }) {
   const { error } = await supabase.from("creditos_viagem").insert({
     viagem_id: viagemId,

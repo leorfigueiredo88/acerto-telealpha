@@ -7,7 +7,7 @@ import { cores, fmtData, brl, STATUS_CFG, TIPO_CREDITO_CFG, fontes } from "../..
 export default function RelatorioScreen({ route }) {
   const { viagemId, usuarioId } = route.params;
   const { perfil } = useAuth();
-  const { viagens, despesas, creditos, categoriaPorId, usuarioPorId } = useData();
+  const { viagens, despesas, creditos, categoriaPorId, usuarioPorId, participanteDe } = useData();
 
   const viagem = viagens.find((v) => v.id === viagemId);
   const colaborador = usuarioPorId(usuarioId);
@@ -20,10 +20,13 @@ export default function RelatorioScreen({ route }) {
 
   if (!viagem || !colaborador) return null;
 
+  const meuParticipante = participanteDe(viagem, usuarioId);
+  const fimAcerto = meuParticipante.fechadoEm.slice(0, 10);
+
   const compartilhar = () => {
     const linhas = [
       `RELATÓRIO DE ACERTO — ${viagem.nome}`,
-      `${viagem.destino} · ${fmtData(viagem.inicio)} a ${fmtData(viagem.fim)}`,
+      `${viagem.destino} · ${fmtData(viagem.inicio)} a ${fmtData(fimAcerto)}`,
       `Colaborador: ${colaborador.nome}`,
       `Gestor: ${perfil.nome}`,
       "",
@@ -53,7 +56,7 @@ export default function RelatorioScreen({ route }) {
 
       <View style={styles.card}>
         <Text style={styles.titulo}>{viagem.nome}</Text>
-        <Text style={styles.subtitulo}>{viagem.destino} · {fmtData(viagem.inicio)} a {fmtData(viagem.fim)}</Text>
+        <Text style={styles.subtitulo}>{viagem.destino} · {fmtData(viagem.inicio)} a {fmtData(fimAcerto)}</Text>
         <Text style={styles.subtitulo}>Colaborador: {colaborador.nome}</Text>
         <Text style={styles.subtitulo}>Gestor responsável: {perfil.nome}</Text>
 

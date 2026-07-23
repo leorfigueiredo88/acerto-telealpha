@@ -90,6 +90,11 @@ export function DataProvider({ children }) {
     await recarregar();
   };
 
+  const atualizarDataFimViagem = async (viagemId, novaDataFim) => {
+    await api.atualizarDataFimViagem(viagemId, novaDataFim);
+    await recarregar();
+  };
+
   const marcarCreditosVistos = async (viagemId) => {
     try {
       await api.marcarCreditosVistos(viagemId);
@@ -123,6 +128,7 @@ export function DataProvider({ children }) {
         enviarRedefinicaoSenha,
         definirStatusColaborador,
         adicionarParticipantes,
+        atualizarDataFimViagem,
         marcarCreditosVistos,
       }}
     >

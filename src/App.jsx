@@ -4,7 +4,7 @@ import {
   Banknote, LogOut, Plus, History, LayoutDashboard, ScanLine, Loader2,
   ChevronRight, Filter, TrendingUp, Inbox, X, ShieldCheck, Plane,
   Users, Lock, FileText, Printer, MapPin, CalendarRange, ChevronLeft,
-  Wallet, HandCoins, BadgeCheck, BadgeAlert, UserPlus, RefreshCw, KeyRound, Send, UserX, UserCheck
+  Wallet, HandCoins, BadgeCheck, BadgeAlert, UserPlus, RefreshCw, KeyRound, Send, UserX, UserCheck, Pencil
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import * as api from "./lib/api";
@@ -812,6 +812,54 @@ function ModalIncluirParticipante({ colaboradoresDisponiveis, onFechar, onInclui
 }
 
 /* ============================================================
+   GESTOR — ALTERAR DATA DE TÉRMINO DA VIAGEM
+   ============================================================ */
+function ModalEditarDataFim({ viagem, onFechar, onSalvar }) {
+  const [fim, setFim] = useState(viagem.fim);
+  const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  const salvar = async () => {
+    if (!fim) return setErro("Informe a nova data de término.");
+    if (fim < viagem.inicio) return setErro("A data final não pode ser anterior à data de início.");
+    setErro("");
+    setEnviando(true);
+    try {
+      await onSalvar(fim);
+    } catch (e) {
+      setErro(`Erro ao salvar: ${e.message}`);
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div className="no-print fixed inset-0 z-50 flex items-end justify-center bg-stone-900/50 p-0 sm:items-center sm:p-4" onClick={onFechar}>
+      <div onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4">
+          <h3 className="text-base font-bold text-stone-900">Alterar data de término</h3>
+          <button onClick={onFechar} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"><X size={18} /></button>
+        </div>
+        <div className="px-5 py-4">
+          <p className="mb-3 text-sm text-stone-500">{viagem.nome} — início em {fmtData(viagem.inicio)}</p>
+
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Nova data de término</label>
+          <input type="date" value={fim} min={viagem.inicio} onChange={(e) => setFim(e.target.value)}
+            className="mb-3 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus-brand" />
+
+          {erro && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
+
+          <button onClick={salvar} disabled={enviando}
+            className="btn-brand flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold disabled:opacity-60">
+            <Pencil size={16} /> {enviando ? "Salvando…" : "Salvar nova data"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
    GESTOR — CADASTRAR NOVO FUNCIONÁRIO
    ============================================================ */
 function gerarSenhaProvisoria() {
@@ -923,7 +971,7 @@ function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFe
           <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
             <div className="col-span-2"><p className="text-xs font-semibold uppercase text-stone-400">Viagem</p><p className="font-medium text-stone-900">{viagem.nome}</p></div>
             <div><p className="text-xs font-semibold uppercase text-stone-400">Destino</p><p className="font-medium text-stone-900">{viagem.destino}</p></div>
-            <div><p className="text-xs font-semibold uppercase text-stone-400">Período</p><p className="font-medium text-stone-900">{fmtData(viagem.inicio)} a {fmtData(viagem.fim)}</p></div>
+            <div><p className="text-xs font-semibold uppercase text-stone-400">Período</p><p className="font-medium text-stone-900">{fmtData(viagem.inicio)} a {fmtData(meuParticipante.fechadoEm.slice(0, 10))}</p></div>
             <div className="col-span-2"><p className="text-xs font-semibold uppercase text-stone-400">Colaborador</p><p className="font-medium text-stone-900">{colaborador.nome}</p></div>
             <div><p className="text-xs font-semibold uppercase text-stone-400">Gestor responsável</p><p className="font-medium text-stone-900">{gestor.nome}</p></div>
             <div><p className="text-xs font-semibold uppercase text-stone-400">Status do acerto</p><p className="font-medium text-stone-900">{PARTICIPANTE_CFG[meuParticipante.status].label}</p></div>
@@ -1177,13 +1225,14 @@ function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirD
 /* ============================================================
    GESTOR — VIEW PRINCIPAL
    ============================================================ */
-function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos, setCreditos, usuarios, setUsuarios, toast, onDecidir, onCriarViagem, onLancarCredito, onFecharParticipante, onCriarColaborador, onRedefinirSenha, onDefinirStatusColaborador, onIncluirParticipante, onMarcarCreditosVistos }) {
+function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos, setCreditos, usuarios, setUsuarios, toast, onDecidir, onCriarViagem, onLancarCredito, onFecharParticipante, onCriarColaborador, onRedefinirSenha, onDefinirStatusColaborador, onIncluirParticipante, onMarcarCreditosVistos, onAtualizarDataFimViagem }) {
   const [tab, setTab] = useState("viagens");
   const [sel, setSel] = useState(null);
   const [viagemAberta, setViagemAberta] = useState(null);
   const [criandoViagem, setCriandoViagem] = useState(false);
   const [cadastrandoColaborador, setCadastrandoColaborador] = useState(false);
   const [incluindoParticipante, setIncluindoParticipante] = useState(false);
+  const [editandoDataFim, setEditandoDataFim] = useState(false);
   const [lancandoCreditoPara, setLancandoCreditoPara] = useState(null); // usuarioId
   const [relatorioDe, setRelatorioDe] = useState(null); // { viagemId, usuarioId }
   const [fColab, setFColab] = useState("");
@@ -1313,6 +1362,18 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
     toast.show(usuarioIds.length === 1 ? "Funcionário incluído na viagem" : "Funcionários incluídos na viagem");
   };
 
+  const atualizarDataFimViagem = async (viagemId, novaDataFim) => {
+    if (onAtualizarDataFimViagem) {
+      await onAtualizarDataFimViagem(viagemId, novaDataFim);
+      setEditandoDataFim(false);
+      toast.show("Data de término atualizada");
+      return;
+    }
+    setViagens((vs) => vs.map((v) => v.id === viagemId ? { ...v, fim: novaDataFim } : v));
+    setEditandoDataFim(false);
+    toast.show("Data de término atualizada");
+  };
+
   const abrirViagem = (viagemId) => {
     setViagemAberta(viagemId);
     if (onMarcarCreditosVistos) {
@@ -1408,6 +1469,10 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
               <p className="mt-3 text-xs text-stone-500">
                 O fechamento do acerto é individual — feche o acerto de cada colaborador separadamente, no card dele abaixo.
               </p>
+              <button onClick={() => setEditandoDataFim(true)}
+                className="mt-3 flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
+                <Pencil size={13} /> Alterar data de término
+              </button>
             </div>
 
             <div className="mb-2 mt-5 flex items-center justify-between">
@@ -1436,6 +1501,12 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
                 )}
                 onFechar={() => setIncluindoParticipante(false)}
                 onIncluir={(usuarioIds) => incluirParticipantes(v.id, usuarioIds)} />
+            )}
+
+            {editandoDataFim && (
+              <ModalEditarDataFim viagem={v}
+                onFechar={() => setEditandoDataFim(false)}
+                onSalvar={(novaDataFim) => atualizarDataFimViagem(v.id, novaDataFim)} />
             )}
           </>
         );
@@ -1904,6 +1975,11 @@ function AppReal() {
     show(usuarioIds.length === 1 ? "Funcionário incluído na viagem" : "Funcionários incluídos na viagem");
   };
 
+  const atualizarDataFimViagem = async (viagemId, novaDataFim) => {
+    await api.atualizarDataFimViagem(viagemId, novaDataFim);
+    await carregarDados();
+  };
+
   const marcarCreditosVistos = async (viagemId) => {
     try {
       await api.marcarCreditosVistos(viagemId);
@@ -1975,7 +2051,8 @@ function AppReal() {
             onDecidir={decidir} onCriarViagem={criarViagem} onLancarCredito={lancarCredito}
             onFecharParticipante={fecharParticipante} onCriarColaborador={criarColaborador}
             onRedefinirSenha={redefinirSenha} onDefinirStatusColaborador={definirStatusColaborador}
-            onIncluirParticipante={incluirParticipante} onMarcarCreditosVistos={marcarCreditosVistos} />
+            onIncluirParticipante={incluirParticipante} onMarcarCreditosVistos={marcarCreditosVistos}
+            onAtualizarDataFimViagem={atualizarDataFimViagem} />
         : <ColaboradorView user={perfil} despesas={despesas} viagens={viagens} creditos={creditos}
             addDespesa={addDespesa} onConfirmarCredito={confirmarCredito} toast={toast} />}
       <Toast msg={toastMsg} />
