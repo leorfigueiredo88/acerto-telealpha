@@ -31,7 +31,7 @@ export default function TrocarSenhaScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: cores.fundo, justifyContent: "center", padding: 20 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={{ backgroundColor: cores.cartao, borderRadius: 18, borderWidth: 1, borderColor: cores.borda, padding: 22 }}>
         <View style={{ alignItems: "center", marginBottom: 18 }}>

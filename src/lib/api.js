@@ -46,6 +46,7 @@ function mapDespesa(d) {
     status: d.status,
     motivoRecusa: d.motivo_recusa ?? undefined,
     aprovadoPor: d.aprovado_por ?? undefined,
+    comprovanteUrl: d.comprovante_url ?? undefined,
   };
 }
 
@@ -132,8 +133,32 @@ export async function fetchCreditos() {
   return data.map(mapCredito);
 }
 
+/* ---------- Storage (comprovantes) ---------- */
+// Caminho sempre começa com o id de quem envia — é o que a policy do
+// bucket "comprovantes" usa pra decidir quem pode ler/gravar cada
+// arquivo (veja migration 0009_storage_comprovantes.sql).
+export async function uploadComprovante(usuarioId, file) {
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const caminho = `${usuarioId}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from("comprovantes").upload(caminho, file);
+  if (error) throw error;
+  return caminho;
+}
+
+// Bucket é privado — a exibição da imagem depende de uma URL assinada
+// (expira em 1h), não de uma URL pública direta.
+export async function getComprovanteUrl(caminho) {
+  const { data, error } = await supabase.storage.from("comprovantes").createSignedUrl(caminho, 3600);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
 /* ---------- escrita ---------- */
-export async function criarDespesa({ viagemId, usuarioId, valor, categoriaId, data, descricao, estabelecimento }) {
+export async function criarDespesa({ viagemId, usuarioId, valor, categoriaId, data, descricao, estabelecimento, comprovanteFile }) {
+  let comprovanteUrl = null;
+  if (comprovanteFile) {
+    comprovanteUrl = await uploadComprovante(usuarioId, comprovanteFile);
+  }
   const { error } = await supabase.from("despesas").insert({
     viagem_id: viagemId,
     usuario_id: usuarioId,
@@ -142,6 +167,7 @@ export async function criarDespesa({ viagemId, usuarioId, valor, categoriaId, da
     data_despesa: data,
     descricao,
     estabelecimento: estabelecimento || null,
+    comprovante_url: comprovanteUrl,
   });
   if (error) throw error;
 }

@@ -43,7 +43,7 @@ export default function NovoCreditoScreen({ route, navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.conteudo}>
         <View style={styles.colabBox}>
           <MaterialCommunityIcons name="account" size={14} color={cores.azul} />

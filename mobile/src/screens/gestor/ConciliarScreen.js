@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
 import { useData } from "../../context/DataContext";
@@ -40,66 +40,68 @@ export default function ConciliarScreen({ route, navigation }) {
   };
 
   return (
-    <ScrollView style={styles.tela} contentContainerStyle={styles.conteudo}>
-      <View style={styles.reciboBox}>
-        <MaterialCommunityIcons name={ICON_POR_NOME[cat?.icone] || "receipt"} size={30} color={cores.textoFraco} />
-        <Text style={styles.reciboEstab}>{despesa.estabelecimento || "Estabelecimento não informado"}</Text>
-        <Text style={styles.reciboValor}>{brl(despesa.valor)}</Text>
-      </View>
-
-      <View style={styles.infoBox}>
-        <InfoLinha label="Viagem" valor={viagem?.nome} />
-        <InfoLinha label="Colaborador" valor={colab?.nome} />
-        <InfoLinha label="Categoria" valor={cat?.nome} />
-        <InfoLinha label="Data" valor={fmtData(despesa.data)} />
-        <InfoLinha label="Valor" valor={brl(despesa.valor)} destaque />
-        <View style={styles.divisor} />
-        <Text style={styles.infoLabel}>Justificativa</Text>
-        <Text style={styles.justificativa}>{despesa.descricao}</Text>
-      </View>
-
-      {!recusando ? (
-        <View style={styles.linhaBotoes}>
-          <TouchableOpacity style={styles.botaoRecusar} disabled={enviando} onPress={() => setRecusando(true)}>
-            <MaterialCommunityIcons name="close-circle" size={16} color={cores.vermelhoTexto} />
-            <Text style={styles.botaoRecusarTexto}>Recusar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.botaoAprovar} disabled={enviando} onPress={() => decidir("aprovado")}>
-            {enviando ? <ActivityIndicator color={cores.branco} /> : (
-              <>
-                <MaterialCommunityIcons name="check-circle" size={16} color={cores.branco} />
-                <Text style={styles.botaoAprovarTexto}>Aprovar</Text>
-              </>
-            )}
-          </TouchableOpacity>
+    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <ScrollView contentContainerStyle={styles.conteudo}>
+        <View style={styles.reciboBox}>
+          <MaterialCommunityIcons name={ICON_POR_NOME[cat?.icone] || "receipt"} size={30} color={cores.textoFraco} />
+          <Text style={styles.reciboEstab}>{despesa.estabelecimento || "Estabelecimento não informado"}</Text>
+          <Text style={styles.reciboValor}>{brl(despesa.valor)}</Text>
         </View>
-      ) : (
-        <View>
-          <Text style={styles.label}>Motivo da recusa</Text>
-          <TextInput
-            value={motivo}
-            onChangeText={setMotivo}
-            multiline
-            numberOfLines={3}
-            autoFocus
-            placeholder="Explique o motivo para o colaborador corrigir o lançamento"
-            style={styles.textarea}
-          />
+
+        <View style={styles.infoBox}>
+          <InfoLinha label="Viagem" valor={viagem?.nome} />
+          <InfoLinha label="Colaborador" valor={colab?.nome} />
+          <InfoLinha label="Categoria" valor={cat?.nome} />
+          <InfoLinha label="Data" valor={fmtData(despesa.data)} />
+          <InfoLinha label="Valor" valor={brl(despesa.valor)} destaque />
+          <View style={styles.divisor} />
+          <Text style={styles.infoLabel}>Justificativa</Text>
+          <Text style={styles.justificativa}>{despesa.descricao}</Text>
+        </View>
+
+        {!recusando ? (
           <View style={styles.linhaBotoes}>
-            <TouchableOpacity style={styles.botaoVoltar} onPress={() => setRecusando(false)}>
-              <Text style={styles.botaoVoltarTexto}>Voltar</Text>
+            <TouchableOpacity style={styles.botaoRecusar} disabled={enviando} onPress={() => setRecusando(true)}>
+              <MaterialCommunityIcons name="close-circle" size={16} color={cores.vermelhoTexto} />
+              <Text style={styles.botaoRecusarTexto}>Recusar</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.botaoConfirmarRecusa, !motivo.trim() && { opacity: 0.4 }]}
-              disabled={!motivo.trim() || enviando}
-              onPress={() => decidir("recusado", motivo.trim())}
-            >
-              {enviando ? <ActivityIndicator color={cores.branco} /> : <Text style={styles.botaoAprovarTexto}>Confirmar recusa</Text>}
+            <TouchableOpacity style={styles.botaoAprovar} disabled={enviando} onPress={() => decidir("aprovado")}>
+              {enviando ? <ActivityIndicator color={cores.branco} /> : (
+                <>
+                  <MaterialCommunityIcons name="check-circle" size={16} color={cores.branco} />
+                  <Text style={styles.botaoAprovarTexto}>Aprovar</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
-        </View>
-      )}
-    </ScrollView>
+        ) : (
+          <View>
+            <Text style={styles.label}>Motivo da recusa</Text>
+            <TextInput
+              value={motivo}
+              onChangeText={setMotivo}
+              multiline
+              numberOfLines={3}
+              autoFocus
+              placeholder="Explique o motivo para o colaborador corrigir o lançamento"
+              style={styles.textarea}
+            />
+            <View style={styles.linhaBotoes}>
+              <TouchableOpacity style={styles.botaoVoltar} onPress={() => setRecusando(false)}>
+                <Text style={styles.botaoVoltarTexto}>Voltar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.botaoConfirmarRecusa, !motivo.trim() && { opacity: 0.4 }]}
+                disabled={!motivo.trim() || enviando}
+                onPress={() => decidir("recusado", motivo.trim())}
+              >
+                {enviando ? <ActivityIndicator color={cores.branco} /> : <Text style={styles.botaoAprovarTexto}>Confirmar recusa</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -28,7 +28,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.tela}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.cabecalho}>
         <Image source={require("../assets/logo.png")} style={styles.logo} resizeMode="contain" />

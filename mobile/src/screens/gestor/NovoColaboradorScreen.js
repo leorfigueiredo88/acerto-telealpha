@@ -46,7 +46,7 @@ export default function NovoColaboradorScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.conteudo}>
         <Text style={styles.label}>Nome</Text>
         <TextInput value={nome} onChangeText={setNome} placeholder="Nome completo" style={styles.input} />

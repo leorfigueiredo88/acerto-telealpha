@@ -84,7 +84,7 @@ export default function NovaDespesaScreen({ route, navigation }) {
   if (!viagem) return null;
 
   return (
-    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.conteudo}>
         <View style={styles.viagemBox}>
           <MaterialCommunityIcons name="airplane" size={14} color={cores.azul} />

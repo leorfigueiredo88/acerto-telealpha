@@ -53,7 +53,7 @@ export default function NovaViagemScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={styles.tela} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.conteudo}>
         <Text style={styles.label}>Nome da viagem</Text>
         <TextInput value={nome} onChangeText={setNome} placeholder="Ex.: Visita técnica — Cliente X" style={styles.input} />
