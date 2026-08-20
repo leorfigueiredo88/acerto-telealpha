@@ -3,6 +3,7 @@ import GestorTabs from "./GestorTabs";
 import ViagemDetalheScreen from "../screens/gestor/ViagemDetalheScreen";
 import NovaViagemScreen from "../screens/gestor/NovaViagemScreen";
 import NovoCreditoScreen from "../screens/gestor/NovoCreditoScreen";
+import EditarCreditoScreen from "../screens/gestor/EditarCreditoScreen";
 import NovoColaboradorScreen from "../screens/gestor/NovoColaboradorScreen";
 import IncluirParticipanteScreen from "../screens/gestor/IncluirParticipanteScreen";
 import ConciliarScreen from "../screens/gestor/ConciliarScreen";
@@ -20,6 +21,7 @@ export default function GestorNavigator() {
       <Stack.Group screenOptions={{ presentation: "modal" }}>
         <Stack.Screen name="NovaViagem" component={NovaViagemScreen} options={{ title: "Nova viagem" }} />
         <Stack.Screen name="NovoCredito" component={NovoCreditoScreen} options={{ title: "Lançar crédito" }} />
+        <Stack.Screen name="EditarCredito" component={EditarCreditoScreen} options={{ title: "Editar crédito" }} />
         <Stack.Screen name="NovoColaborador" component={NovoColaboradorScreen} options={{ title: "Novo funcionário" }} />
         <Stack.Screen name="IncluirParticipante" component={IncluirParticipanteScreen} options={{ title: "Incluir funcionário" }} />
         <Stack.Screen name="Conciliar" component={ConciliarScreen} options={{ title: "Analisar despesa" }} />

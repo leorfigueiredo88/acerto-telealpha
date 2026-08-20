@@ -8,7 +8,7 @@ import { ParticipanteBadge } from "./Badge";
 import LinhaDespesa from "./LinhaDespesa";
 import LinhaCredito from "./LinhaCredito";
 
-export default function PainelParticipante({ viagem, participante, onAbrirDespesa, onLancarCredito, onVerRelatorio }) {
+export default function PainelParticipante({ viagem, participante, onAbrirDespesa, onLancarCredito, onVerRelatorio, onEditarCredito }) {
   const { despesas, creditos, usuarioPorId, fecharAcertoParticipante } = useData();
   const [fechando, setFechando] = useState(false);
 
@@ -86,7 +86,7 @@ export default function PainelParticipante({ viagem, participante, onAbrirDespes
       </View>
       {meusCreditos.length > 0 && (
         <View style={{ gap: 6, marginTop: 6 }}>
-          {meusCreditos.map((c) => <LinhaCredito key={c.id} credito={c} />)}
+          {meusCreditos.map((c) => <LinhaCredito key={c.id} credito={c} onEditar={onEditarCredito} />)}
         </View>
       )}
 

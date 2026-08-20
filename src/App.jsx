@@ -144,7 +144,7 @@ function ParticipanteBadge({ status }) {
 }
 
 /* Uma linha de crédito (diária/outro repasse) lançado para o colaborador */
-function LinhaCredito({ credito, onConfirmar }) {
+function LinhaCredito({ credito, onConfirmar, onEditar }) {
   const cfg = TIPO_CREDITO_CFG[credito.tipo];
   return (
     <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-3.5">
@@ -165,6 +165,12 @@ function LinhaCredito({ credito, onConfirmar }) {
         </p>
       </div>
       <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-stone-900">{brl(credito.valor)}</span>
+      {onEditar && (
+        <button onClick={() => onEditar(credito)} title="Editar valor lançado"
+          className="shrink-0 rounded-lg border border-stone-200 p-1.5 text-stone-400 transition hover:border-sky-300 hover:text-accent">
+          <Pencil size={14} />
+        </button>
+      )}
       {onConfirmar && credito.confirmado !== true && (
         <div className="flex shrink-0 gap-1.5">
           <button onClick={() => onConfirmar(credito.id, true)} title="Confirmar recebimento"
@@ -1175,8 +1181,68 @@ function ModalNovoCredito({ colaborador, onFechar, onCriar }) {
   );
 }
 
+/* Gestor corrige valor/descrição de um crédito já lançado — mesmo confirmado */
+function ModalEditarCredito({ credito, colaborador, onFechar, onSalvar }) {
+  const [valor, setValor] = useState(String(credito.valor).replace(".", ","));
+  const [descricao, setDescricao] = useState(credito.descricao || "");
+  const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
+
+  const salvar = async () => {
+    const v = parseFloat(String(valor).replace(/\./g, "").replace(",", "."));
+    if (!v || v <= 0) return setErro("Informe um valor válido.");
+    setErro("");
+    setEnviando(true);
+    try {
+      await onSalvar(v, descricao.trim());
+    } catch (e) {
+      setErro(`Erro ao salvar: ${e.message}`);
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div className="no-print fixed inset-0 z-50 flex items-end justify-center bg-stone-900/50 p-0 sm:items-center sm:p-4" onClick={onFechar}>
+      <div onClick={(e) => e.stopPropagation()}
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4">
+          <div>
+            <h3 className="text-base font-bold text-stone-900">Editar crédito</h3>
+            <p className="mt-0.5 text-xs text-stone-500">{TIPO_CREDITO_CFG[credito.tipo].label} — {colaborador?.nome}</p>
+          </div>
+          <button onClick={onFechar} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"><X size={18} /></button>
+        </div>
+
+        <div className="px-5 py-4">
+          {credito.confirmado !== null && (
+            <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              {colaborador?.nome?.split(" ")[0]} já {credito.confirmado ? "confirmou" : "contestou"} este crédito — ao salvar, a confirmação é
+              zerada e ele precisa aprovar de novo (inclusive reabre o fechamento do acerto, se já estiver fechado).
+            </p>
+          )}
+
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Valor (R$)</label>
+          <input value={valor} onChange={(e) => setValor(e.target.value)} placeholder="0,00" inputMode="decimal"
+            className="mb-3 w-full rounded-lg border border-stone-300 px-3 py-2.5 font-mono text-sm tabular-nums focus-brand" />
+
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Descrição (opcional)</label>
+          <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={2}
+            className="w-full resize-none rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus-brand" />
+
+          {erro && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{erro}</p>}
+
+          <button onClick={salvar} disabled={enviando}
+            className="btn-brand mt-4 flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold disabled:opacity-60">
+            <Pencil size={16} /> {enviando ? "Salvando…" : "Salvar alteração"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* Card de acerto individual de um participante, dentro do detalhe da viagem (gestor) */
-function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirDespesa, onLancarCredito, onFechar, onVerRelatorio }) {
+function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirDespesa, onLancarCredito, onFechar, onVerRelatorio, onEditarCredito }) {
   const colab = userById(participante.usuarioId);
   const pend = despesas.filter((d) => d.status === "pendente").length;
   const totalDespesas = despesas.filter((d) => d.status === "aprovado" || d.status === "pago").reduce((a, d) => a + d.valor, 0);
@@ -1225,7 +1291,7 @@ function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirD
       </div>
       {creditos.length > 0 && (
         <div className="mt-2 space-y-1.5">
-          {creditos.map((c) => <LinhaCredito key={c.id} credito={c} />)}
+          {creditos.map((c) => <LinhaCredito key={c.id} credito={c} onEditar={onEditarCredito} />)}
         </div>
       )}
 
@@ -1259,7 +1325,7 @@ function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirD
 /* ============================================================
    GESTOR — VIEW PRINCIPAL
    ============================================================ */
-function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos, setCreditos, usuarios, setUsuarios, toast, onDecidir, onCriarViagem, onLancarCredito, onFecharParticipante, onCriarColaborador, onRedefinirSenha, onDefinirStatusColaborador, onIncluirParticipante, onMarcarCreditosVistos, onAtualizarDataFimViagem }) {
+function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos, setCreditos, usuarios, setUsuarios, toast, onDecidir, onCriarViagem, onLancarCredito, onFecharParticipante, onCriarColaborador, onRedefinirSenha, onDefinirStatusColaborador, onIncluirParticipante, onMarcarCreditosVistos, onAtualizarDataFimViagem, onExcluirViagem, onEditarCredito }) {
   const [tab, setTab] = useState("viagens");
   const [sel, setSel] = useState(null);
   const [viagemAberta, setViagemAberta] = useState(null);
@@ -1267,6 +1333,7 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
   const [cadastrandoColaborador, setCadastrandoColaborador] = useState(false);
   const [incluindoParticipante, setIncluindoParticipante] = useState(false);
   const [editandoDataFim, setEditandoDataFim] = useState(false);
+  const [editandoCredito, setEditandoCredito] = useState(null); // objeto credito
   const [lancandoCreditoPara, setLancandoCreditoPara] = useState(null); // usuarioId
   const [relatorioDe, setRelatorioDe] = useState(null); // { viagemId, usuarioId }
   const [fColab, setFColab] = useState("");
@@ -1408,6 +1475,52 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
     toast.show("Data de término atualizada");
   };
 
+  const excluirViagem = async (viagemId) => {
+    const v = viagens.find((x) => x.id === viagemId);
+    const confirmado = window.confirm(
+      `Excluir a viagem "${v?.nome}"? Isso apaga também todas as despesas e créditos lançados nela — não pode ser desfeito.`
+    );
+    if (!confirmado) return;
+
+    if (onExcluirViagem) {
+      try {
+        await onExcluirViagem(viagemId);
+        setViagemAberta(null);
+        toast.show("Viagem excluída");
+      } catch (e) {
+        toast.show(`Erro ao excluir: ${e.message}`);
+      }
+      return;
+    }
+    setViagens((vs) => vs.filter((x) => x.id !== viagemId));
+    setDespesas((ds) => ds.filter((d) => d.viagemId !== viagemId));
+    setCreditos((cs) => cs.filter((c) => c.viagemId !== viagemId));
+    setViagemAberta(null);
+    toast.show("Viagem excluída");
+  };
+
+  const editarCredito = async (creditoId, valor, descricao) => {
+    if (onEditarCredito) {
+      await onEditarCredito(creditoId, valor, descricao);
+      setEditandoCredito(null);
+      toast.show("Crédito atualizado — aguardando nova confirmação do colaborador");
+      return;
+    }
+    const credito = creditos.find((c) => c.id === creditoId);
+    setCreditos((cs) => cs.map((c) => c.id === creditoId ? { ...c, valor, descricao, confirmado: null, confirmadoEm: undefined } : c));
+    if (credito) {
+      setViagens((vs) => vs.map((v) => v.id !== credito.viagemId ? v : {
+        ...v,
+        status: v.status === "fechada" ? "aberta" : v.status,
+        participantes: v.participantes.map((p) => p.usuarioId === credito.usuarioId
+          ? { ...p, status: "aberto", fechadoPor: undefined, fechadoEm: undefined }
+          : p),
+      }));
+    }
+    setEditandoCredito(null);
+    toast.show("Crédito atualizado — aguardando nova confirmação do colaborador");
+  };
+
   const abrirViagem = (viagemId) => {
     setViagemAberta(viagemId);
     if (onMarcarCreditosVistos) {
@@ -1503,10 +1616,16 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
               <p className="mt-3 text-xs text-stone-500">
                 O fechamento do acerto é individual — feche o acerto de cada colaborador separadamente, no card dele abaixo.
               </p>
-              <button onClick={() => setEditandoDataFim(true)}
-                className="mt-3 flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
-                <Pencil size={13} /> Alterar data de término
-              </button>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <button onClick={() => setEditandoDataFim(true)}
+                  className="flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
+                  <Pencil size={13} /> Alterar data de término
+                </button>
+                <button onClick={() => excluirViagem(v.id)}
+                  className="flex items-center gap-1.5 text-sm font-medium text-red-600 hover:underline">
+                  <XCircle size={13} /> Excluir viagem
+                </button>
+              </div>
             </div>
 
             <div className="mb-2 mt-5 flex items-center justify-between">
@@ -1524,7 +1643,8 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
                   onAbrirDespesa={(d) => setSel(d)}
                   onLancarCredito={() => setLancandoCreditoPara(p.usuarioId)}
                   onFechar={() => fecharParticipante(v.id, p.usuarioId)}
-                  onVerRelatorio={() => setRelatorioDe({ viagemId: v.id, usuarioId: p.usuarioId })} />
+                  onVerRelatorio={() => setRelatorioDe({ viagemId: v.id, usuarioId: p.usuarioId })}
+                  onEditarCredito={(credito) => setEditandoCredito(credito)} />
               ))}
             </div>
 
@@ -1541,6 +1661,12 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
               <ModalEditarDataFim viagem={v}
                 onFechar={() => setEditandoDataFim(false)}
                 onSalvar={(novaDataFim) => atualizarDataFimViagem(v.id, novaDataFim)} />
+            )}
+
+            {editandoCredito && (
+              <ModalEditarCredito credito={editandoCredito} colaborador={userById(editandoCredito.usuarioId)}
+                onFechar={() => setEditandoCredito(null)}
+                onSalvar={(valor, descricao) => editarCredito(editandoCredito.id, valor, descricao)} />
             )}
           </>
         );
@@ -2015,6 +2141,16 @@ function AppReal() {
     await carregarDados();
   };
 
+  const excluirViagem = async (viagemId) => {
+    await api.excluirViagem(viagemId);
+    await carregarDados();
+  };
+
+  const editarCredito = async (creditoId, valor, descricao) => {
+    await api.editarCredito(creditoId, valor, descricao);
+    await carregarDados();
+  };
+
   const marcarCreditosVistos = async (viagemId) => {
     try {
       await api.marcarCreditosVistos(viagemId);
@@ -2087,7 +2223,7 @@ function AppReal() {
             onFecharParticipante={fecharParticipante} onCriarColaborador={criarColaborador}
             onRedefinirSenha={redefinirSenha} onDefinirStatusColaborador={definirStatusColaborador}
             onIncluirParticipante={incluirParticipante} onMarcarCreditosVistos={marcarCreditosVistos}
-            onAtualizarDataFimViagem={atualizarDataFimViagem} />
+            onAtualizarDataFimViagem={atualizarDataFimViagem} onExcluirViagem={excluirViagem} onEditarCredito={editarCredito} />
         : <ColaboradorView user={perfil} despesas={despesas} viagens={viagens} creditos={creditos}
             addDespesa={addDespesa} onConfirmarCredito={confirmarCredito} toast={toast} />}
       <Toast msg={toastMsg} />

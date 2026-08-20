@@ -95,6 +95,16 @@ export function DataProvider({ children }) {
     await recarregar();
   };
 
+  const excluirViagem = async (viagemId) => {
+    await api.excluirViagem(viagemId);
+    await recarregar();
+  };
+
+  const editarCredito = async (creditoId, valor, descricao) => {
+    await api.editarCredito(creditoId, valor, descricao);
+    await recarregar();
+  };
+
   const marcarCreditosVistos = async (viagemId) => {
     try {
       await api.marcarCreditosVistos(viagemId);
@@ -129,6 +139,8 @@ export function DataProvider({ children }) {
         definirStatusColaborador,
         adicionarParticipantes,
         atualizarDataFimViagem,
+        excluirViagem,
+        editarCredito,
         marcarCreditosVistos,
       }}
     >

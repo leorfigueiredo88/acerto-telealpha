@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cores, brl, TIPO_CREDITO_CFG, fontes } from "../theme";
 
-export default function LinhaCredito({ credito, onConfirmar }) {
+export default function LinhaCredito({ credito, onConfirmar, onEditar }) {
   const cfg = TIPO_CREDITO_CFG[credito.tipo];
 
   return (
@@ -24,6 +24,11 @@ export default function LinhaCredito({ credito, onConfirmar }) {
         {credito.confirmado === null && <Text style={styles.statusPendente}>Aguardando confirmação</Text>}
       </View>
       <Text style={styles.valor}>{brl(credito.valor)}</Text>
+      {onEditar && (
+        <Pressable onPress={() => onEditar(credito)} style={styles.botaoIcone}>
+          <MaterialCommunityIcons name="pencil-outline" size={16} color={cores.textoFraco} />
+        </Pressable>
+      )}
       {onConfirmar && credito.confirmado !== true && (
         <View style={styles.acoes}>
           <Pressable

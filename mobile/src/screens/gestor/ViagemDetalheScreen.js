@@ -10,10 +10,11 @@ import PainelParticipante from "../../components/PainelParticipante";
 
 export default function ViagemDetalheScreen({ route, navigation }) {
   const { viagemId } = route.params;
-  const { viagens, usuarios, marcarCreditosVistos, atualizarDataFimViagem } = useData();
+  const { viagens, usuarios, marcarCreditosVistos, atualizarDataFimViagem, excluirViagem } = useData();
   const [editandoFim, setEditandoFim] = useState(false);
   const [novaFim, setNovaFim] = useState(null);
   const [salvandoFim, setSalvandoFim] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
 
   useEffect(() => {
     marcarCreditosVistos(viagemId);
@@ -33,6 +34,26 @@ export default function ViagemDetalheScreen({ route, navigation }) {
     } finally {
       setSalvandoFim(false);
     }
+  };
+
+  const confirmarExclusao = () => {
+    alertar("Excluir viagem", `Excluir a viagem "${v.nome}"? Isso apaga também todas as despesas e créditos lançados nela — não pode ser desfeito.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir viagem",
+        style: "destructive",
+        onPress: async () => {
+          setExcluindo(true);
+          try {
+            await excluirViagem(v.id);
+            navigation.goBack();
+          } catch (e) {
+            alertar("Não foi possível excluir", e.message);
+            setExcluindo(false);
+          }
+        },
+      },
+    ]);
   };
 
   const nomes = v.participantes.map((p) => usuarios.find((u) => u.id === p.usuarioId)?.nome).filter(Boolean).join(", ");
@@ -98,6 +119,10 @@ export default function ViagemDetalheScreen({ route, navigation }) {
         <Text style={styles.avisoTexto}>
           O fechamento do acerto é individual — feche o acerto de cada colaborador separadamente, no card dele abaixo.
         </Text>
+        <TouchableOpacity onPress={confirmarExclusao} disabled={excluindo} style={styles.botaoExcluirViagem}>
+          <MaterialCommunityIcons name="trash-can-outline" size={13} color={cores.vermelhoTexto} />
+          <Text style={styles.botaoExcluirViagemTexto}>{excluindo ? "Excluindo…" : "Excluir viagem"}</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.secaoTopo}>
@@ -119,6 +144,7 @@ export default function ViagemDetalheScreen({ route, navigation }) {
             onAbrirDespesa={(d) => navigation.navigate("Conciliar", { despesaId: d.id })}
             onLancarCredito={() => navigation.navigate("NovoCredito", { viagemId: v.id, usuarioId: p.usuarioId })}
             onVerRelatorio={() => navigation.navigate("Relatorio", { viagemId: v.id, usuarioId: p.usuarioId })}
+            onEditarCredito={(credito) => navigation.navigate("EditarCredito", { creditoId: credito.id })}
           />
         ))}
       </View>
@@ -135,6 +161,8 @@ const styles = StyleSheet.create({
   metaLinha: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
   metaTexto: { fontSize: fontes.tamanho.sm, color: cores.textoMuted },
   avisoTexto: { marginTop: 10, fontSize: fontes.tamanho.sm, color: cores.textoMuted },
+  botaoExcluirViagem: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 10 },
+  botaoExcluirViagemTexto: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.medio, color: cores.vermelhoTexto },
   secaoTopo: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 22, marginBottom: 10 },
   secao: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.negrito, textTransform: "uppercase", color: cores.textoMuted, letterSpacing: 0.3 },
   linkIncluir: { flexDirection: "row", alignItems: "center", gap: 4 },

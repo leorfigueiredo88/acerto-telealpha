@@ -219,6 +219,16 @@ export async function atualizarDataFimViagem(viagemId, novaDataFim) {
   }
 }
 
+// Gestor exclui a viagem inteira — apaga junto despesas, créditos e
+// participantes (ON DELETE CASCADE, migration 0010). Sem volta.
+export async function excluirViagem(viagemId) {
+  const { data, error } = await supabase.from("viagens").delete().eq("id", viagemId).select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Não foi possível excluir a viagem — confira se você está logado como gestor.");
+  }
+}
+
 export async function criarCredito({ viagemId, usuarioId, tipo, valor, descricao, lancadoPor }) {
   const { error } = await supabase.from("creditos_viagem").insert({
     viagem_id: viagemId,
@@ -228,6 +238,15 @@ export async function criarCredito({ viagemId, usuarioId, tipo, valor, descricao
     descricao: descricao || null,
     lancado_por: lancadoPor,
   });
+  if (error) throw error;
+}
+
+// Gestor corrige valor/descrição de um crédito já lançado — mesmo que
+// o colaborador já tenha confirmado. Isso sempre derruba a confirmação
+// (RPC zera "confirmado", reabrindo o fechamento do acerto se já
+// estivesse fechado): o colaborador precisa aprovar de novo.
+export async function editarCredito(id, valor, descricao) {
+  const { error } = await supabase.rpc("editar_credito", { p_credito_id: id, p_valor: valor, p_descricao: descricao || null });
   if (error) throw error;
 }
 
