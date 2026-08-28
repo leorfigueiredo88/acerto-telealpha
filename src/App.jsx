@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import * as api from "./lib/api";
+import { lerTextoDoArquivo, extrairCamposDoTexto } from "./lib/ocr";
 
 /* ============================================================
    MARCA TELEALPHA — cores extraídas da logo oficial
@@ -348,6 +349,7 @@ function LinhaDespesa({ d, viagem, mostrarColab, onClick }) {
 function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
   const [foto, setFoto] = useState(null);
   const [fotoPreview, setFotoPreview] = useState(null);
+  const [ocrEstado, setOcrEstado] = useState("vazio"); // vazio | lendo | lido
   const [valor, setValor] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [data, setData] = useState("");
@@ -361,13 +363,25 @@ function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
     const arquivo = e.target.files?.[0];
     if (!arquivo) return;
     setFoto(arquivo);
-    setFotoPreview((antiga) => { if (antiga) URL.revokeObjectURL(antiga); return URL.createObjectURL(arquivo); });
+    setFotoPreview((antiga) => { if (antiga) URL.revokeObjectURL(antiga); return arquivo.type === "application/pdf" ? "pdf" : URL.createObjectURL(arquivo); });
+
+    setOcrEstado("lendo");
+    lerTextoDoArquivo(arquivo)
+      .then((texto) => {
+        const campos = extrairCamposDoTexto(texto);
+        setValor((v) => v || campos.valor || v);
+        setEstabelecimento((e2) => e2 || campos.estabelecimento || e2);
+        setDescricao((d) => d || campos.estabelecimento || d);
+        setOcrEstado(campos.valor || campos.estabelecimento ? "lido" : "vazio");
+      })
+      .catch(() => setOcrEstado("vazio"));
   };
 
   const removerFoto = () => {
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
+    if (fotoPreview && fotoPreview !== "pdf") URL.revokeObjectURL(fotoPreview);
     setFoto(null);
     setFotoPreview(null);
+    setOcrEstado("vazio");
     if (inputFotoRef.current) inputFotoRef.current.value = "";
   };
 
@@ -403,24 +417,42 @@ function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
         </div>
 
         <div className="px-5 py-4">
-          <input ref={inputFotoRef} type="file" accept="image/*" capture="environment" onChange={escolherFoto} className="hidden" />
+          <input ref={inputFotoRef} type="file" accept="image/*,application/pdf" capture="environment" onChange={escolherFoto} className="hidden" />
 
           {fotoPreview ? (
-            <div className="relative mb-4">
-              <img src={fotoPreview} alt="Comprovante selecionado" className="max-h-56 w-full rounded-xl border border-stone-200 object-contain bg-stone-50" />
-              <button onClick={removerFoto} title="Remover foto"
+            <div className="relative mb-2">
+              {fotoPreview === "pdf" ? (
+                <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4">
+                  <FileText size={28} className="shrink-0 text-stone-400" />
+                  <span className="truncate text-sm font-medium text-stone-700">{foto?.name}</span>
+                </div>
+              ) : (
+                <img src={fotoPreview} alt="Comprovante selecionado" className="max-h-56 w-full rounded-xl border border-stone-200 object-contain bg-stone-50" />
+              )}
+              <button onClick={removerFoto} title="Remover arquivo"
                 className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-stone-500 shadow hover:bg-white hover:text-red-600">
                 <X size={15} />
               </button>
             </div>
           ) : (
             <button onClick={() => inputFotoRef.current?.click()}
-              className="mb-4 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-300 bg-stone-50 py-7 transition hover:border-sky-400 hover:bg-sky-50/50">
+              className="mb-2 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-300 bg-stone-50 py-7 transition hover:border-sky-400 hover:bg-sky-50/50">
               <Camera size={26} className="text-stone-400" />
               <span className="text-sm font-medium text-stone-700">Fotografar ou enviar recibo</span>
-              <span className="text-xs text-stone-400">Opcional — anexa uma foto da nota fiscal</span>
+              <span className="text-xs text-stone-400">Opcional — foto ou PDF da nota fiscal</span>
             </button>
           )}
+
+          <div className="mb-4">
+            {ocrEstado === "lendo" && (
+              <p className="flex items-center gap-1.5 text-xs text-accent">
+                <Loader2 size={12} className="animate-spin" /> Lendo comprovante… isso pode levar alguns segundos
+              </p>
+            )}
+            {ocrEstado === "lido" && (
+              <p className="text-xs text-accent">Alguns campos foram preenchidos automaticamente — confira antes de enviar.</p>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
@@ -641,6 +673,15 @@ function ComprovanteFoto({ despesa, compacto }) {
   const altura = compacto ? "max-h-40" : "max-h-72";
   if (erro) return <p className="rounded-lg bg-stone-50 py-8 text-center text-sm text-stone-400">Não foi possível carregar o comprovante.</p>;
   if (!url) return <div className="flex h-32 items-center justify-center rounded-lg bg-stone-50"><Loader2 size={22} className="animate-spin text-stone-300" /></div>;
+
+  if (despesa.comprovanteUrl.toLowerCase().endsWith(".pdf")) {
+    return (
+      <a href={url} target="_blank" rel="noreferrer"
+        className="flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-50 py-6 text-sm font-medium text-accent hover:bg-sky-50">
+        <FileText size={20} /> Abrir comprovante (PDF)
+      </a>
+    );
+  }
   return <img src={url} alt="Comprovante" className={`mx-auto ${altura} w-full rounded-xl border border-stone-200 bg-stone-50 object-contain`} />;
 }
 
