@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
-  Utensils, WashingMachine, Package, Receipt, Camera, CheckCircle2, XCircle, Clock,
+  Utensils, WashingMachine, Package, Receipt, Bed, Camera, CheckCircle2, XCircle, Clock,
   Banknote, LogOut, Plus, History, LayoutDashboard, Loader2,
   ChevronRight, Filter, TrendingUp, Inbox, X, ShieldCheck, Plane,
   Users, Lock, FileText, Printer, MapPin, CalendarRange, ChevronLeft,
@@ -30,6 +30,7 @@ let CATEGORIAS = [
   { id: 2, nome: "Lavanderia", Icon: WashingMachine },
   { id: 3, nome: "Material", Icon: Package },
   { id: 4, nome: "Outros", Icon: Receipt },
+  { id: 5, nome: "Hospedagem", Icon: Bed },
 ];
 
 let USUARIOS = [
@@ -39,7 +40,7 @@ let USUARIOS = [
 ];
 
 // Mapeia o campo "icone" (texto, vindo do banco) para o componente de ícone.
-const ICON_MAP = { utensils: Utensils, lavanderia: WashingMachine, material: Package, receipt: Receipt };
+const ICON_MAP = { utensils: Utensils, lavanderia: WashingMachine, material: Package, hospedagem: Bed, receipt: Receipt };
 
 // "participantes" é uma lista de objetos { usuarioId, status, fechadoPor?, fechadoEm? }:
 // o fechamento do acerto é individual, por colaborador, não pela viagem toda

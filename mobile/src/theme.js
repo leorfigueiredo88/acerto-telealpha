@@ -86,6 +86,7 @@ export const ICON_POR_NOME = {
   utensils: "silverware-fork-knife",
   lavanderia: "washing-machine",
   material: "package-variant",
+  hospedagem: "bed",
   receipt: "receipt",
 };
 
