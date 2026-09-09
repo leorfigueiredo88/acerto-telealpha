@@ -160,8 +160,12 @@ export async function editarDespesa(despesaId, { valor, categoriaId, data, descr
   if (error) throw error;
 }
 
+// Usa .select() pra forçar o Postgres a devolver a linha alterada: sem
+// isso, um UPDATE bloqueado pela RLS (ex.: usuário não é gestor, ou não
+// está ativo) retorna sucesso silencioso — 0 linhas afetadas, sem erro
+// — e a UI acha que aprovou/recusou quando na verdade nada mudou.
 export async function decidirDespesa(id, status, motivoRecusa, aprovadoPor) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("despesas")
     .update({
       status,
@@ -169,8 +173,12 @@ export async function decidirDespesa(id, status, motivoRecusa, aprovadoPor) {
       aprovado_por: aprovadoPor,
       aprovado_em: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Não foi possível decidir a despesa — confira se você está logado como gestor.");
+  }
 }
 
 export async function criarViagem({ nome, destino, inicio, fim, participantes, criadaPor }) {
