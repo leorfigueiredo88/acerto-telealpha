@@ -58,8 +58,23 @@ body {
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
-  body * { visibility: hidden !important; }
-  #relatorio-acerto, #relatorio-acerto * { visibility: visible !important; }
-  #relatorio-acerto { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; }
+
+  /* O relatório é renderizado via createPortal direto em <body>
+     (#relatorio-portal), fora da árvore do app — assim escapamos do
+     "fixed inset-0 + overflow-y-auto" do próprio modal, que — se
+     ficasse como ancestral do conteúdo impresso — fazia o Chrome
+     paginar errado (repetindo a mesma página 4x, cortando o resto do
+     relatório). Some com o app inteiro e deixa só o portal, fluindo
+     normalmente — assim a paginação de várias páginas funciona certo. */
+  #root { display: none !important; }
+  #relatorio-portal {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+    background: none !important;
+    padding: 0 !important;
+  }
+  #relatorio-acerto { box-shadow: none !important; }
   .no-print { display: none !important; }
 }

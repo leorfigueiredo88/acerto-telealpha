@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Utensils, WashingMachine, Package, Receipt, Bed, Camera, CheckCircle2, XCircle, Clock,
   Banknote, LogOut, Plus, History, LayoutDashboard, Loader2,
@@ -1058,8 +1059,8 @@ function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFe
   const totalCreditos = creditos.filter((c) => c.confirmado === true).reduce((a, c) => a + c.valor, 0);
   const saldo = totalDespesas - totalCreditos;
 
-  return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-stone-900/60 p-2 sm:p-6" onClick={onFechar}>
+  return createPortal(
+    <div id="relatorio-portal" className="fixed inset-0 z-[60] overflow-y-auto bg-stone-900/60 p-2 sm:p-6" onClick={onFechar}>
       <div onClick={(e) => e.stopPropagation()} className="mx-auto max-w-3xl">
         <div className="no-print mb-3 flex items-center justify-between rounded-xl bg-white/95 px-4 py-3 shadow">
           <p className="text-sm font-semibold text-stone-800">Prévia do relatório de acerto</p>
@@ -1190,7 +1191,8 @@ function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFe
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
