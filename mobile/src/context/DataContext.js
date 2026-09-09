@@ -46,6 +46,11 @@ export function DataProvider({ children }) {
     await recarregar();
   };
 
+  const editarDespesa = async (despesaId, dados) => {
+    await api.editarDespesa(despesaId, dados);
+    await recarregar();
+  };
+
   const decidirDespesa = async (id, status, motivo, aprovadoPor) => {
     await api.decidirDespesa(id, status, motivo, aprovadoPor);
     await recarregar();
@@ -129,6 +134,7 @@ export function DataProvider({ children }) {
         usuarioPorId,
         participanteDe,
         criarDespesa,
+        editarDespesa,
         decidirDespesa,
         criarViagem,
         criarCredito,

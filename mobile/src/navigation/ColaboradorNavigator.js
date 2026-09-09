@@ -14,7 +14,10 @@ export default function ColaboradorNavigator() {
       <Stack.Screen
         name="NovaDespesa"
         component={NovaDespesaScreen}
-        options={{ title: "Nova despesa", presentation: "modal" }}
+        options={({ route }) => ({
+          title: route.params?.despesaId ? "Editar despesa" : "Nova despesa",
+          presentation: "modal",
+        })}
       />
     </Stack.Navigator>
   );

@@ -172,6 +172,27 @@ export async function criarDespesa({ viagemId, usuarioId, valor, categoriaId, da
   if (error) throw error;
 }
 
+// Colaborador corrige a própria despesa (pendente ou recusada). A RPC
+// sempre devolve o status pra "pendente" — se estava recusada, isso
+// reenvia pra aprovação do gestor. Só troca o comprovante se um novo
+// arquivo for enviado; senão mantém o que já estava anexado.
+export async function editarDespesa(despesaId, { usuarioId, valor, categoriaId, data, descricao, estabelecimento, comprovanteFile }) {
+  let comprovanteUrl = null;
+  if (comprovanteFile) {
+    comprovanteUrl = await uploadComprovante(usuarioId, comprovanteFile);
+  }
+  const { error } = await supabase.rpc("editar_despesa", {
+    p_despesa_id: despesaId,
+    p_valor: valor,
+    p_categoria_id: categoriaId,
+    p_data: data,
+    p_descricao: descricao,
+    p_estabelecimento: estabelecimento || null,
+    p_comprovante_url: comprovanteUrl,
+  });
+  if (error) throw error;
+}
+
 export async function decidirDespesa(id, status, motivoRecusa, aprovadoPor) {
   const { error } = await supabase
     .from("despesas")

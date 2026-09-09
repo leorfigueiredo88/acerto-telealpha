@@ -347,15 +347,16 @@ function LinhaDespesa({ d, viagem, mostrarColab, onClick }) {
 /* ============================================================
    PERFIL COLABORADOR
    ============================================================ */
-function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
+function ModalNovaDespesa({ viagem, despesa, onFechar, onSubmit }) {
+  const editando = !!despesa;
   const [foto, setFoto] = useState(null);
   const [fotoPreview, setFotoPreview] = useState(null);
   const [ocrEstado, setOcrEstado] = useState("vazio"); // vazio | lendo | lido
-  const [valor, setValor] = useState("");
-  const [categoriaId, setCategoriaId] = useState("");
-  const [data, setData] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [estabelecimento, setEstabelecimento] = useState("");
+  const [valor, setValor] = useState(editando ? String(despesa.valor).replace(".", ",") : "");
+  const [categoriaId, setCategoriaId] = useState(editando ? String(despesa.categoriaId) : "");
+  const [data, setData] = useState(editando ? despesa.data : "");
+  const [descricao, setDescricao] = useState(editando ? despesa.descricao : "");
+  const [estabelecimento, setEstabelecimento] = useState(editando ? (despesa.estabelecimento || "") : "");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
   const inputFotoRef = useRef(null);
@@ -400,7 +401,7 @@ function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
         descricao: descricao.trim(), estabelecimento, comprovanteFile: foto,
       });
     } catch (e) {
-      setErro(`Erro ao enviar: ${e.message}`);
+      setErro(`Erro ao ${editando ? "salvar" : "enviar"}: ${e.message}`);
       setEnviando(false);
     }
   };
@@ -411,13 +412,19 @@ function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
         className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-stone-100 px-5 py-4">
           <div>
-            <h3 className="text-base font-bold text-stone-900">Novo lançamento</h3>
+            <h3 className="text-base font-bold text-stone-900">{editando ? "Editar despesa" : "Novo lançamento"}</h3>
             <p className="mt-0.5 text-xs text-stone-500">{viagem.nome} — {viagem.destino}</p>
           </div>
           <button onClick={onFechar} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"><X size={18} /></button>
         </div>
 
         <div className="px-5 py-4">
+          {editando && despesa.status === "recusado" && (
+            <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Essa despesa tinha sido recusada{despesa.motivoRecusa ? ` — motivo: "${despesa.motivoRecusa}"` : ""}. Ao salvar, ela volta pra fila de aprovação do gestor.
+            </p>
+          )}
+
           <input ref={inputFotoRef} type="file" accept="image/*,application/pdf" capture="environment" onChange={escolherFoto} className="hidden" />
 
           {fotoPreview ? (
@@ -439,8 +446,12 @@ function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
             <button onClick={() => inputFotoRef.current?.click()}
               className="mb-2 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-300 bg-stone-50 py-7 transition hover:border-sky-400 hover:bg-sky-50/50">
               <Camera size={26} className="text-stone-400" />
-              <span className="text-sm font-medium text-stone-700">Fotografar ou enviar recibo</span>
-              <span className="text-xs text-stone-400">Opcional — foto ou PDF da nota fiscal</span>
+              <span className="text-sm font-medium text-stone-700">
+                {editando && despesa.comprovanteUrl ? "Trocar comprovante" : "Fotografar ou enviar recibo"}
+              </span>
+              <span className="text-xs text-stone-400">
+                {editando && despesa.comprovanteUrl ? "Opcional — mantém o atual se você não trocar" : "Opcional — foto ou PDF da nota fiscal"}
+              </span>
             </button>
           )}
 
@@ -488,7 +499,8 @@ function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
 
           <button onClick={enviar} disabled={enviando}
             className="btn-brand mt-4 flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold disabled:opacity-60">
-            <Plus size={16} /> {enviando ? "Enviando…" : "Enviar para aprovação"}
+            {editando ? <Pencil size={16} /> : <Plus size={16} />}
+            {enviando ? (editando ? "Salvando…" : "Enviando…") : (editando ? "Salvar alteração" : "Enviar para aprovação")}
           </button>
         </div>
       </div>
@@ -496,10 +508,16 @@ function ModalNovaDespesa({ viagem, onFechar, onSubmit }) {
   );
 }
 
-function ColaboradorView({ user, despesas, viagens, creditos, addDespesa, onConfirmarCredito, toast }) {
+function ColaboradorView({ user, despesas, viagens, creditos, addDespesa, onEditarDespesa, onConfirmarCredito, toast }) {
   const [tab, setTab] = useState("inicio");
   const [viagemAberta, setViagemAberta] = useState(null);
   const [lancando, setLancando] = useState(false);
+  const [editando, setEditando] = useState(null); // despesa sendo editada
+
+  const editarDespesa = async (dados) => {
+    await onEditarDespesa(editando.id, dados);
+    setEditando(null);
+  };
 
   const minhas = despesas.filter((d) => d.usuarioId === user.id);
   const soma = (s) => minhas.filter((d) => d.status === s).reduce((a, d) => a + d.valor, 0);
@@ -553,7 +571,10 @@ function ColaboradorView({ user, despesas, viagens, creditos, addDespesa, onConf
             </button>
           </div>
           <div className="mt-3 space-y-2">
-            {minhas.slice(0, 4).map((d) => <LinhaDespesa key={d.id} d={d} viagem={viagemDe(d)} />)}
+            {minhas.slice(0, 4).map((d) => (
+              <LinhaDespesa key={d.id} d={d} viagem={viagemDe(d)}
+                onClick={(d.status === "pendente" || d.status === "recusado") ? () => setEditando(d) : undefined} />
+            ))}
           </div>
         </>
       )}
@@ -628,7 +649,10 @@ function ColaboradorView({ user, despesas, viagens, creditos, addDespesa, onConf
                   Nenhuma despesa lançada nesta viagem ainda.
                 </div>
               )}
-              {dv.map((d) => <LinhaDespesa key={d.id} d={d} />)}
+              {dv.map((d) => (
+                <LinhaDespesa key={d.id} d={d}
+                  onClick={(d.status === "pendente" || d.status === "recusado") ? () => setEditando(d) : undefined} />
+              ))}
             </div>
 
             {lancando && (
@@ -646,8 +670,17 @@ function ColaboradorView({ user, despesas, viagens, creditos, addDespesa, onConf
               Nenhuma despesa lançada ainda. Toque em uma viagem no Início para lançar a primeira.
             </div>
           )}
-          {minhas.map((d) => <LinhaDespesa key={d.id} d={d} viagem={viagemDe(d)} />)}
+          {minhas.map((d) => (
+            <LinhaDespesa key={d.id} d={d} viagem={viagemDe(d)}
+              onClick={(d.status === "pendente" || d.status === "recusado") ? () => setEditando(d) : undefined} />
+          ))}
         </div>
+      )}
+
+      {editando && (
+        <ModalNovaDespesa viagem={viagemDe(editando)} despesa={editando}
+          onFechar={() => setEditando(null)}
+          onSubmit={editarDespesa} />
       )}
     </Shell>
   );
@@ -1895,6 +1928,15 @@ function AppDemo() {
     show("Despesa enviada para aprovação");
   };
 
+  const editarDespesa = (despesaId, dados) => {
+    const { comprovanteFile, viagemId, ...resto } = dados;
+    setDespesas((ds) => ds.map((d) => d.id === despesaId
+      ? { ...d, ...resto, status: "pendente", motivoRecusa: undefined, aprovadoPor: undefined }
+      : d
+    ));
+    show("Despesa atualizada");
+  };
+
   const confirmarCredito = (id, confirmado) => {
     setCreditos((cs) => cs.map((c) => c.id === id ? { ...c, confirmado, confirmadoEm: new Date().toISOString(), notificacaoLida: false } : c));
     show(confirmado ? "Recebimento confirmado" : "Marcado como não recebido");
@@ -1909,7 +1951,7 @@ function AppDemo() {
         ? <GestorView user={user} despesas={despesas} setDespesas={setDespesas} viagens={viagens} setViagens={setViagens}
             creditos={creditos} setCreditos={setCreditos} usuarios={usuarios} setUsuarios={setUsuarios} toast={toast} />
         : <ColaboradorView user={user} despesas={despesas} viagens={viagens} creditos={creditos}
-            addDespesa={addDespesa} onConfirmarCredito={confirmarCredito} toast={toast} />}
+            addDespesa={addDespesa} onEditarDespesa={editarDespesa} onConfirmarCredito={confirmarCredito} toast={toast} />}
       <Toast msg={toastMsg} />
     </>
   );
@@ -2105,6 +2147,12 @@ function AppReal() {
     }
   };
 
+  const editarDespesa = async (despesaId, dados) => {
+    await api.editarDespesa(despesaId, { ...dados, usuarioId: perfil.id });
+    await carregarDados();
+    show("Despesa atualizada");
+  };
+
   const decidir = async (id, status, motivo) => {
     try {
       await api.decidirDespesa(id, status, motivo, perfil.id);
@@ -2267,7 +2315,7 @@ function AppReal() {
             onIncluirParticipante={incluirParticipante} onMarcarCreditosVistos={marcarCreditosVistos}
             onAtualizarDataFimViagem={atualizarDataFimViagem} onExcluirViagem={excluirViagem} onEditarCredito={editarCredito} />
         : <ColaboradorView user={perfil} despesas={despesas} viagens={viagens} creditos={creditos}
-            addDespesa={addDespesa} onConfirmarCredito={confirmarCredito} toast={toast} />}
+            addDespesa={addDespesa} onEditarDespesa={editarDespesa} onConfirmarCredito={confirmarCredito} toast={toast} />}
       <Toast msg={toastMsg} />
     </>
   );

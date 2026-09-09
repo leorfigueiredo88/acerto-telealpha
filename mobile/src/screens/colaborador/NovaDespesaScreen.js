@@ -21,20 +21,22 @@ import { alertar } from "../../lib/alertar";
 import SelectModal from "../../components/SelectModal";
 
 export default function NovaDespesaScreen({ route, navigation }) {
-  const { viagemId } = route.params;
+  const { viagemId, despesaId } = route.params;
   const { perfil } = useAuth();
-  const { viagens, categorias, criarDespesa } = useData();
+  const { viagens, categorias, despesas, criarDespesa, editarDespesa } = useData();
 
-  const viagem = viagens.find((v) => v.id === viagemId);
+  const despesaExistente = despesaId ? despesas.find((d) => d.id === despesaId) : null;
+  const editando = !!despesaExistente;
+  const viagem = viagens.find((v) => v.id === (viagemId || despesaExistente?.viagemId));
 
   const [foto, setFoto] = useState(null);
   const [ocrEstado, setOcrEstado] = useState("vazio"); // vazio | lendo | lido
-  const [valor, setValor] = useState("");
-  const [categoriaId, setCategoriaId] = useState("");
-  const [data, setData] = useState(hoje());
+  const [valor, setValor] = useState(editando ? String(despesaExistente.valor).replace(".", ",") : "");
+  const [categoriaId, setCategoriaId] = useState(editando ? despesaExistente.categoriaId : "");
+  const [data, setData] = useState(editando ? despesaExistente.data : hoje());
   const [mostrarData, setMostrarData] = useState(false);
-  const [descricao, setDescricao] = useState("");
-  const [estabelecimento, setEstabelecimento] = useState("");
+  const [descricao, setDescricao] = useState(editando ? despesaExistente.descricao : "");
+  const [estabelecimento, setEstabelecimento] = useState(editando ? (despesaExistente.estabelecimento || "") : "");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -68,14 +70,24 @@ export default function NovaDespesaScreen({ route, navigation }) {
     setErro("");
     setEnviando(true);
     try {
-      await criarDespesa(
-        { viagemId, valor: v, categoriaId: Number(categoriaId), data, descricao: descricao.trim(), estabelecimento },
-        perfil.id
-      );
-      alertar("Despesa enviada", "Sua despesa foi enviada para aprovação.");
+      if (editando) {
+        await editarDespesa(despesaExistente.id, {
+          valor: v, categoriaId: Number(categoriaId), data, descricao: descricao.trim(), estabelecimento,
+        });
+        alertar(
+          "Despesa atualizada",
+          despesaExistente.status === "recusado" ? "Ela voltou pra fila de aprovação do gestor." : "Alteração salva."
+        );
+      } else {
+        await criarDespesa(
+          { viagemId, valor: v, categoriaId: Number(categoriaId), data, descricao: descricao.trim(), estabelecimento },
+          perfil.id
+        );
+        alertar("Despesa enviada", "Sua despesa foi enviada para aprovação.");
+      }
       navigation.goBack();
     } catch (e) {
-      setErro(`Erro ao enviar: ${e.message}`);
+      setErro(`Erro ao ${editando ? "salvar" : "enviar"}: ${e.message}`);
     } finally {
       setEnviando(false);
     }
@@ -91,27 +103,39 @@ export default function NovaDespesaScreen({ route, navigation }) {
           <Text style={styles.viagemTexto}>{viagem.nome} — {viagem.destino}</Text>
         </View>
 
-        <TouchableOpacity onPress={ocrEstado === "lendo" ? undefined : capturarRecibo} style={styles.fotoBox}>
-          {foto && ocrEstado === "lido" ? (
-            <Image source={{ uri: foto }} style={styles.fotoPreview} />
-          ) : ocrEstado === "lendo" ? (
-            <>
-              <ActivityIndicator color={cores.azul} />
-              <Text style={styles.fotoTextoAtivo}>Lendo comprovante…</Text>
-            </>
-          ) : (
-            <>
-              <MaterialCommunityIcons name="camera" size={26} color={cores.textoFraco} />
-              <Text style={styles.fotoTitulo}>Fotografar recibo</Text>
-              <Text style={styles.fotoSub}>Os dados serão lidos automaticamente (OCR)</Text>
-            </>
-          )}
-          {ocrEstado === "lido" && (
-            <Text style={styles.fotoTextoLido}>
-              <MaterialCommunityIcons name="line-scan" size={13} color={cores.azul} /> Dados lidos — confira antes de enviar
+        {editando && despesaExistente.status === "recusado" && (
+          <View style={styles.avisoBox}>
+            <MaterialCommunityIcons name="alert-outline" size={16} color={cores.amareloTexto} />
+            <Text style={styles.avisoTexto}>
+              Essa despesa tinha sido recusada{despesaExistente.motivoRecusa ? ` — motivo: "${despesaExistente.motivoRecusa}"` : ""}. Ao
+              salvar, ela volta pra fila de aprovação do gestor.
             </Text>
-          )}
-        </TouchableOpacity>
+          </View>
+        )}
+
+        {!editando && (
+          <TouchableOpacity onPress={ocrEstado === "lendo" ? undefined : capturarRecibo} style={styles.fotoBox}>
+            {foto && ocrEstado === "lido" ? (
+              <Image source={{ uri: foto }} style={styles.fotoPreview} />
+            ) : ocrEstado === "lendo" ? (
+              <>
+                <ActivityIndicator color={cores.azul} />
+                <Text style={styles.fotoTextoAtivo}>Lendo comprovante…</Text>
+              </>
+            ) : (
+              <>
+                <MaterialCommunityIcons name="camera" size={26} color={cores.textoFraco} />
+                <Text style={styles.fotoTitulo}>Fotografar recibo</Text>
+                <Text style={styles.fotoSub}>Os dados serão lidos automaticamente (OCR)</Text>
+              </>
+            )}
+            {ocrEstado === "lido" && (
+              <Text style={styles.fotoTextoLido}>
+                <MaterialCommunityIcons name="line-scan" size={13} color={cores.azul} /> Dados lidos — confira antes de enviar
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         <Text style={styles.label}>Valor (R$)</Text>
         <TextInput value={valor} onChangeText={setValor} placeholder="0,00" keyboardType="decimal-pad" style={styles.input} />
@@ -158,8 +182,8 @@ export default function NovaDespesaScreen({ route, navigation }) {
             <ActivityIndicator color={cores.branco} />
           ) : (
             <>
-              <MaterialCommunityIcons name="plus" size={16} color={cores.branco} />
-              <Text style={styles.botaoTexto}>Enviar para aprovação</Text>
+              <MaterialCommunityIcons name={editando ? "content-save-outline" : "plus"} size={16} color={cores.branco} />
+              <Text style={styles.botaoTexto}>{editando ? "Salvar alteração" : "Enviar para aprovação"}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -182,6 +206,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   viagemTexto: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.medio, color: cores.azulEscuro, flexShrink: 1 },
+  avisoBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: cores.amarelo,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+  },
+  avisoTexto: { flex: 1, fontSize: fontes.tamanho.sm, color: cores.amareloTexto, lineHeight: 18 },
   label: { fontSize: fontes.tamanho.sm, fontWeight: fontes.peso.negrito, textTransform: "uppercase", color: cores.textoMuted, marginBottom: 4, letterSpacing: 0.3 },
   input: {
     borderWidth: 1,

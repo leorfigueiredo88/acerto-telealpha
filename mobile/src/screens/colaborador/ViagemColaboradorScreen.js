@@ -84,7 +84,10 @@ export default function ViagemColaboradorScreen({ route, navigation }) {
       <View style={{ gap: 8 }}>
         {minhas.length === 0 && <Text style={styles.vazio}>Nenhuma despesa lançada nesta viagem ainda.</Text>}
         {minhas.map((d) => (
-          <LinhaDespesa key={d.id} despesa={d} />
+          <LinhaDespesa key={d.id} despesa={d}
+            onPress={(d.status === "pendente" || d.status === "recusado")
+              ? () => navigation.navigate("NovaDespesa", { despesaId: d.id })
+              : undefined} />
         ))}
       </View>
     </ScrollView>

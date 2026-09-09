@@ -61,7 +61,10 @@ export default function InicioScreen({ navigation }) {
       </View>
       <View style={{ gap: 8 }}>
         {minhas.slice(0, 4).map((d) => (
-          <LinhaDespesa key={d.id} despesa={d} viagem={viagemDe(d)} />
+          <LinhaDespesa key={d.id} despesa={d} viagem={viagemDe(d)}
+            onPress={(d.status === "pendente" || d.status === "recusado")
+              ? () => navigation.navigate("NovaDespesa", { despesaId: d.id })
+              : undefined} />
         ))}
         {minhas.length === 0 && <Text style={styles.vazio}>Nenhuma despesa lançada ainda.</Text>}
       </View>

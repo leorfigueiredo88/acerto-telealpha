@@ -5,7 +5,7 @@ import { useData } from "../../context/DataContext";
 import { cores, fontes } from "../../theme";
 import LinhaDespesa from "../../components/LinhaDespesa";
 
-export default function HistoricoScreen() {
+export default function HistoricoScreen({ navigation }) {
   const { perfil } = useAuth();
   const { despesas, viagens, recarregar } = useData();
   const [atualizando, setAtualizando] = useState(false);
@@ -27,7 +27,12 @@ export default function HistoricoScreen() {
         contentContainerStyle={styles.conteudo}
         refreshControl={<RefreshControl refreshing={atualizando} onRefresh={atualizar} />}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-        renderItem={({ item }) => <LinhaDespesa despesa={item} viagem={viagemDe(item)} />}
+        renderItem={({ item }) => (
+          <LinhaDespesa despesa={item} viagem={viagemDe(item)}
+            onPress={(item.status === "pendente" || item.status === "recusado")
+              ? () => navigation.navigate("NovaDespesa", { despesaId: item.id })
+              : undefined} />
+        )}
         ListEmptyComponent={
           <View style={styles.vazioBox}>
             <Text style={styles.vazioTexto}>Nenhuma despesa lançada ainda. Toque em uma viagem no Início para começar.</Text>
