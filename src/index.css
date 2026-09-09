@@ -49,6 +49,15 @@ body {
 .hover-accent-border:hover { border-color: var(--ta-blue-borda); }
 
 @media print {
+  /* Sem isso, o navegador não imprime cor de fundo nem imagem de fundo
+     por padrão (só o "Salvar como PDF" não basta) — a régua navy do
+     cabeçalho, o cabeçalho da tabela de despesas, o fundo listrado e
+     o box de saldo somem, deixando o PDF bem diferente da prévia. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
   body * { visibility: hidden !important; }
   #relatorio-acerto, #relatorio-acerto * { visibility: visible !important; }
   #relatorio-acerto { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; }
