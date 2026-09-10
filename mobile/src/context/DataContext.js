@@ -56,6 +56,11 @@ export function DataProvider({ children }) {
     await recarregar();
   };
 
+  const excluirDespesa = async (id) => {
+    await api.excluirDespesa(id);
+    await recarregar();
+  };
+
   const criarViagem = async (dados, criadaPor) => {
     await api.criarViagem({ ...dados, criadaPor });
     await recarregar();
@@ -73,6 +78,11 @@ export function DataProvider({ children }) {
 
   const fecharAcertoParticipante = async (viagemId, usuarioId) => {
     await api.fecharAcertoParticipante(viagemId, usuarioId);
+    await recarregar();
+  };
+
+  const reabrirAcertoParticipante = async (viagemId, usuarioId) => {
+    await api.reabrirAcertoParticipante(viagemId, usuarioId);
     await recarregar();
   };
 
@@ -136,10 +146,12 @@ export function DataProvider({ children }) {
         criarDespesa,
         editarDespesa,
         decidirDespesa,
+        excluirDespesa,
         criarViagem,
         criarCredito,
         confirmarCredito,
         fecharAcertoParticipante,
+        reabrirAcertoParticipante,
         criarColaborador,
         enviarRedefinicaoSenha,
         definirStatusColaborador,

@@ -214,6 +214,16 @@ export async function decidirDespesa(id, status, motivoRecusa, aprovadoPor) {
   }
 }
 
+// Gestor exclui uma despesa (ex.: aprovou sem querer) — qualquer
+// status. Some junto o histórico dela em despesa_eventos (cascade).
+export async function excluirDespesa(id) {
+  const { data, error } = await supabase.from("despesas").delete().eq("id", id).select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Não foi possível excluir a despesa — confira se você está logado como gestor.");
+  }
+}
+
 export async function criarViagem({ nome, destino, inicio, fim, participantes, criadaPor }) {
   const { data: viagem, error } = await supabase
     .from("viagens")
@@ -298,6 +308,17 @@ export async function marcarCreditosVistos(viagemId) {
 
 export async function fecharAcertoParticipante(viagemId, usuarioId) {
   const { error } = await supabase.rpc("fechar_acerto_participante", {
+    p_viagem_id: viagemId,
+    p_usuario_id: usuarioId,
+  });
+  if (error) throw error;
+}
+
+// Gestor desfaz o fechamento (ex.: colaborador esqueceu ou errou algo)
+// — volta o participante pra "aberto"; se a viagem estava fechada,
+// volta pra "aberta" também.
+export async function reabrirAcertoParticipante(viagemId, usuarioId) {
+  const { error } = await supabase.rpc("reabrir_acerto_participante", {
     p_viagem_id: viagemId,
     p_usuario_id: usuarioId,
   });

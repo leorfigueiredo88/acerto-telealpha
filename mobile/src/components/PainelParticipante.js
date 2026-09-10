@@ -9,8 +9,9 @@ import LinhaDespesa from "./LinhaDespesa";
 import LinhaCredito from "./LinhaCredito";
 
 export default function PainelParticipante({ viagem, participante, onAbrirDespesa, onLancarCredito, onVerRelatorio, onEditarCredito }) {
-  const { despesas, creditos, usuarioPorId, fecharAcertoParticipante } = useData();
+  const { despesas, creditos, usuarioPorId, fecharAcertoParticipante, reabrirAcertoParticipante, excluirDespesa } = useData();
   const [fechando, setFechando] = useState(false);
+  const [reabrindo, setReabrindo] = useState(false);
 
   const colab = usuarioPorId(participante.usuarioId);
   const minhas = despesas.filter((d) => d.viagemId === viagem.id && d.usuarioId === participante.usuarioId);
@@ -42,6 +43,42 @@ export default function PainelParticipante({ viagem, participante, onAbrirDespes
     ]);
   };
 
+  const confirmarReabertura = () => {
+    alertar("Reabrir acerto", `Reabrir o acerto de ${colab?.nome}? Ele volta a poder lançar despesas e créditos nessa viagem.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Reabrir",
+        onPress: async () => {
+          setReabrindo(true);
+          try {
+            await reabrirAcertoParticipante(viagem.id, participante.usuarioId);
+          } catch (e) {
+            alertar("Não foi possível reabrir", e.message);
+          } finally {
+            setReabrindo(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  const confirmarExclusaoDespesa = (despesa) => {
+    alertar("Excluir despesa", `Excluir a despesa "${despesa.descricao}" (${brl(despesa.valor)})? Essa ação não pode ser desfeita.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await excluirDespesa(despesa.id);
+          } catch (e) {
+            alertar("Não foi possível excluir", e.message);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.topo}>
@@ -67,7 +104,14 @@ export default function PainelParticipante({ viagem, participante, onAbrirDespes
       {minhas.length > 0 && (
         <View style={{ gap: 6, marginTop: 12 }}>
           {minhas.map((d) => (
-            <LinhaDespesa key={d.id} despesa={d} onPress={d.status === "pendente" ? () => onAbrirDespesa(d) : undefined} />
+            <View key={d.id} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={{ flex: 1 }}>
+                <LinhaDespesa despesa={d} onPress={d.status === "pendente" ? () => onAbrirDespesa(d) : undefined} />
+              </View>
+              <TouchableOpacity onPress={() => confirmarExclusaoDespesa(d)} style={styles.botaoExcluirDespesa}>
+                <MaterialCommunityIcons name="trash-can-outline" size={18} color={cores.textoFraco} />
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
       )}
@@ -110,10 +154,15 @@ export default function PainelParticipante({ viagem, participante, onAbrirDespes
             )}
           </>
         ) : (
-          <TouchableOpacity style={styles.botaoAccent} onPress={onVerRelatorio}>
-            <MaterialCommunityIcons name="file-document" size={15} color={cores.branco} />
-            <Text style={styles.botaoTexto}>Ver relatório do acerto</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TouchableOpacity style={[styles.botaoAccent, { flex: 1 }]} onPress={onVerRelatorio}>
+              <MaterialCommunityIcons name="file-document" size={15} color={cores.branco} />
+              <Text style={styles.botaoTexto}>Ver relatório do acerto</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.botaoReabrir} disabled={reabrindo} onPress={confirmarReabertura}>
+              <MaterialCommunityIcons name="refresh" size={17} color={cores.textoMuted} />
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </View>
@@ -135,6 +184,8 @@ const styles = StyleSheet.create({
   linkLancarTexto: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.medio, color: cores.azul },
   botao: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: cores.navy, borderRadius: 10, paddingVertical: 12 },
   botaoAccent: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: cores.azul, borderRadius: 10, paddingVertical: 12 },
+  botaoReabrir: { alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: cores.borda, borderRadius: 10, paddingHorizontal: 14 },
+  botaoExcluirDespesa: { padding: 8 },
   botaoTexto: { color: cores.branco, fontWeight: fontes.peso.negrito, fontSize: fontes.tamanho.md },
   avisoTexto: { marginTop: 6, fontSize: fontes.tamanho.sm, color: cores.amareloTexto, textAlign: "center" },
 });
