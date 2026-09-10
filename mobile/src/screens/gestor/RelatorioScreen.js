@@ -11,7 +11,9 @@ export default function RelatorioScreen({ route }) {
 
   const viagem = viagens.find((v) => v.id === viagemId);
   const colaborador = usuarioPorId(usuarioId);
-  const dv = despesas.filter((d) => d.viagemId === viagemId && d.usuarioId === usuarioId);
+  const dv = despesas
+    .filter((d) => d.viagemId === viagemId && d.usuarioId === usuarioId)
+    .sort((a, b) => a.data.localeCompare(b.data));
   const validas = dv.filter((d) => d.status !== "recusado");
   const totalDespesas = validas.reduce((a, d) => a + d.valor, 0);
   const meusCreditos = creditos.filter((c) => c.viagemId === viagemId && c.usuarioId === usuarioId);

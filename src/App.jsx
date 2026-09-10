@@ -1053,6 +1053,7 @@ function ModalNovoColaborador({ onFechar, onCriar }) {
    ============================================================ */
 function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFechar }) {
   const meuParticipante = participanteDe(viagem, colaborador.id);
+  const despesasOrdenadas = [...despesas].sort((a, b) => a.data.localeCompare(b.data));
   const validas = despesas.filter((d) => d.status !== "recusado");
   const recusadas = despesas.filter((d) => d.status === "recusado");
   const totalDespesas = validas.reduce((a, d) => a + d.valor, 0);
@@ -1106,7 +1107,7 @@ function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFe
               </tr>
             </thead>
             <tbody>
-              {despesas.map((d, i) => (
+              {despesasOrdenadas.map((d, i) => (
                 <tr key={d.id} className={i % 2 ? "bg-stone-50" : ""}>
                   <td className="px-2 py-1.5 font-mono tabular-nums">{fmtData(d.data)}</td>
                   <td className="px-2 py-1.5">{catById(d.categoriaId)?.nome}</td>
@@ -1173,7 +1174,7 @@ function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFe
           {/* Comprovantes */}
           <p className="mb-3 mt-6 text-xs font-bold uppercase tracking-wide text-brand">Comprovantes anexados</p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {despesas.map((d) => (
+            {despesasOrdenadas.map((d) => (
               <div key={d.id} className="rounded-lg border border-stone-200 p-3">
                 {d.comprovanteUrl ? <ComprovanteFoto despesa={d} compacto /> : <ComprovanteTermico despesa={d} compacto />}
                 <p className="mt-2 text-xs text-stone-600">
