@@ -5,7 +5,7 @@ import {
   Banknote, LogOut, Plus, History, LayoutDashboard, Loader2,
   ChevronRight, Filter, TrendingUp, Inbox, X, ShieldCheck, Plane,
   Users, Lock, FileText, Printer, MapPin, CalendarRange, ChevronLeft,
-  Wallet, HandCoins, BadgeCheck, BadgeAlert, UserPlus, RefreshCw, KeyRound, Send, UserX, UserCheck, Pencil, Trash2
+  Wallet, HandCoins, BadgeCheck, BadgeAlert, UserPlus, RefreshCw, KeyRound, Send, UserX, UserCheck, Pencil, Trash2, Download, ZoomIn
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import * as api from "./lib/api";
@@ -694,6 +694,7 @@ function ColaboradorView({ user, despesas, viagens, creditos, addDespesa, onEdit
 function ComprovanteFoto({ despesa, compacto }) {
   const [url, setUrl] = useState(null);
   const [erro, setErro] = useState(false);
+  const [ampliado, setAmpliado] = useState(false);
 
   useEffect(() => {
     let ativo = true;
@@ -717,7 +718,59 @@ function ComprovanteFoto({ despesa, compacto }) {
       </a>
     );
   }
-  return <img src={url} alt="Comprovante" className={`mx-auto ${altura} w-full rounded-xl border border-stone-200 bg-stone-50 object-contain`} />;
+  return (
+    <>
+      <button type="button" onClick={() => setAmpliado(true)} title="Ver em tela cheia"
+        className="group relative block w-full">
+        <img src={url} alt="Comprovante" className={`mx-auto ${altura} w-full rounded-xl border border-stone-200 bg-stone-50 object-contain`} />
+        <span className="no-print absolute inset-0 flex items-center justify-center rounded-xl bg-stone-900/0 opacity-0 transition group-hover:bg-stone-900/30 group-hover:opacity-100">
+          <ZoomIn size={22} className="text-white" />
+        </span>
+      </button>
+      {ampliado && <ModalImagemAmpliada url={url} despesa={despesa} onFechar={() => setAmpliado(false)} />}
+    </>
+  );
+}
+
+/* Foto do comprovante em tela cheia, com opção de baixar */
+function ModalImagemAmpliada({ url, despesa, onFechar }) {
+  const [baixando, setBaixando] = useState(false);
+
+  const baixar = async () => {
+    setBaixando(true);
+    try {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const ext = (despesa.comprovanteUrl.split(".").pop() || "jpg").toLowerCase();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `comprovante-${despesa.data}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.alert("Não foi possível baixar a imagem.");
+    } finally {
+      setBaixando(false);
+    }
+  };
+
+  return createPortal(
+    <div className="no-print fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/85 p-4" onClick={onFechar}>
+      <div className="absolute right-4 top-4 flex gap-2">
+        <button onClick={(e) => { e.stopPropagation(); baixar(); }} disabled={baixando}
+          className="flex items-center gap-1.5 rounded-lg bg-white/95 px-3.5 py-2 text-sm font-semibold text-stone-800 shadow hover:bg-white disabled:opacity-60">
+          <Download size={15} /> {baixando ? "Baixando…" : "Baixar imagem"}
+        </button>
+        <button onClick={onFechar} className="rounded-lg bg-white/95 p-2 text-stone-600 shadow hover:bg-white"><X size={18} /></button>
+      </div>
+      <img src={url} alt="Comprovante ampliado" onClick={(e) => e.stopPropagation()}
+        className="max-h-[88vh] max-w-full rounded-lg object-contain shadow-2xl" />
+    </div>,
+    document.body
+  );
 }
 
 function ModalConciliacao({ despesa, viagem, onFechar, onAprovar, onRecusar }) {
