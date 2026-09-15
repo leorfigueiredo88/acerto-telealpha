@@ -1111,7 +1111,8 @@ function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFe
   const recusadas = despesas.filter((d) => d.status === "recusado");
   const totalDespesas = validas.reduce((a, d) => a + d.valor, 0);
   const totalCreditos = creditos.filter((c) => c.confirmado === true).reduce((a, c) => a + c.valor, 0);
-  const saldo = totalDespesas - totalCreditos;
+  // Crédito/diária é benefício já concedido ao colaborador e não é descontado no fechamento.
+  const saldo = totalDespesas;
 
   return createPortal(
     <div id="relatorio-portal" className="fixed inset-0 z-[60] overflow-y-auto bg-stone-900/60 p-2 sm:p-6" onClick={onFechar}>
@@ -1215,13 +1216,14 @@ function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFe
               </tfoot>
             </table>
           )}
+          {creditos.length > 0 && (
+            <p className="mt-1 text-xs text-stone-500">* Diárias e créditos são benefício concedido ao colaborador e não entram no cálculo do saldo final.</p>
+          )}
 
           {/* Saldo final */}
           <div className="mt-5 flex items-center justify-between rounded-xl bg-brand px-5 py-4">
-            <p className="text-sm font-bold uppercase tracking-wide text-white">
-              {saldo >= 0 ? "Saldo a reembolsar ao colaborador" : "Saldo a descontar do colaborador"}
-            </p>
-            <p className="font-mono text-xl font-bold tabular-nums text-white">{brl(Math.abs(saldo))}</p>
+            <p className="text-sm font-bold uppercase tracking-wide text-white">Saldo a reembolsar ao colaborador</p>
+            <p className="font-mono text-xl font-bold tabular-nums text-white">{brl(saldo)}</p>
           </div>
 
           {/* Comprovantes */}
@@ -1379,7 +1381,8 @@ function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirD
   const totalDespesas = despesas.filter((d) => d.status === "aprovado" || d.status === "pago").reduce((a, d) => a + d.valor, 0);
   const naoConfirmados = creditos.filter((c) => c.confirmado !== true).length;
   const totalCreditos = creditos.filter((c) => c.confirmado === true).reduce((a, c) => a + c.valor, 0);
-  const saldo = totalDespesas - totalCreditos;
+  // Crédito/diária é benefício já concedido ao colaborador e não é descontado no fechamento.
+  const saldo = totalDespesas;
   const podeFechar = participante.status === "aberto" && pend === 0 && naoConfirmados === 0;
 
   return (

@@ -18,7 +18,8 @@ export default function RelatorioScreen({ route }) {
   const totalDespesas = validas.reduce((a, d) => a + d.valor, 0);
   const meusCreditos = creditos.filter((c) => c.viagemId === viagemId && c.usuarioId === usuarioId);
   const totalCreditos = meusCreditos.filter((c) => c.confirmado === true).reduce((a, c) => a + c.valor, 0);
-  const saldo = totalDespesas - totalCreditos;
+  // Crédito/diária é benefício já concedido ao colaborador e não é descontado no fechamento.
+  const saldo = totalDespesas;
 
   if (!viagem || !colaborador) return null;
 
@@ -43,8 +44,8 @@ export default function RelatorioScreen({ route }) {
       ),
       "",
       `Total de despesas: ${brl(totalDespesas)}`,
-      `Total de créditos confirmados: ${brl(totalCreditos)}`,
-      saldo >= 0 ? `Saldo a reembolsar: ${brl(saldo)}` : `Saldo a descontar: ${brl(Math.abs(saldo))}`,
+      `Total de créditos confirmados: ${brl(totalCreditos)} (benefício do colaborador, não entra no cálculo do saldo)`,
+      `Saldo a reembolsar: ${brl(saldo)}`,
     ];
     Share.share({ message: linhas.join("\n") });
   };
@@ -95,10 +96,13 @@ export default function RelatorioScreen({ route }) {
           <Text style={styles.totalLabel}>Total de créditos confirmados</Text>
           <Text style={styles.totalValor}>{brl(totalCreditos)}</Text>
         </View>
+        {meusCreditos.length > 0 && (
+          <Text style={styles.notaCreditos}>Diárias e créditos são benefício concedido ao colaborador e não entram no cálculo do saldo final.</Text>
+        )}
 
         <View style={styles.saldoBox}>
-          <Text style={styles.saldoLabel}>{saldo >= 0 ? "Saldo a reembolsar" : "Saldo a descontar"}</Text>
-          <Text style={styles.saldoValor}>{brl(Math.abs(saldo))}</Text>
+          <Text style={styles.saldoLabel}>Saldo a reembolsar</Text>
+          <Text style={styles.saldoValor}>{brl(saldo)}</Text>
         </View>
       </View>
     </ScrollView>
@@ -115,6 +119,7 @@ const styles = StyleSheet.create({
   subtitulo: { fontSize: fontes.tamanho.base, color: cores.textoMuted, marginTop: 2 },
   secao: { fontSize: fontes.tamanho.sm, fontWeight: fontes.peso.negrito, textTransform: "uppercase", color: cores.navy, marginTop: 18, marginBottom: 8, letterSpacing: 0.3 },
   vazio: { fontSize: fontes.tamanho.base, color: cores.textoMuted },
+  notaCreditos: { fontSize: fontes.tamanho.xs, color: cores.textoMuted, marginTop: 6 },
   linha: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: cores.fundo },
   linhaTitulo: { fontSize: fontes.tamanho.base, fontWeight: fontes.peso.medio, color: cores.texto },
   linhaMeta: { fontSize: fontes.tamanho.xs, color: cores.textoMuted, marginTop: 1 },

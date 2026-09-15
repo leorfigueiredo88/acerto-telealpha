@@ -20,7 +20,8 @@ export default function PainelParticipante({ viagem, participante, onAbrirDespes
   const totalDespesas = minhas.filter((d) => d.status === "aprovado" || d.status === "pago").reduce((a, d) => a + d.valor, 0);
   const naoConfirmados = meusCreditos.filter((c) => c.confirmado !== true).length;
   const totalCreditos = meusCreditos.filter((c) => c.confirmado === true).reduce((a, c) => a + c.valor, 0);
-  const saldo = totalDespesas - totalCreditos;
+  // Crédito/diária é benefício já concedido ao colaborador e não é descontado no fechamento.
+  const saldo = totalDespesas;
   const podeFechar = participante.status === "aberto" && pend === 0 && naoConfirmados === 0;
 
   const confirmarFechamento = () => {
