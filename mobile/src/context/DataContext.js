@@ -120,6 +120,11 @@ export function DataProvider({ children }) {
     await recarregar();
   };
 
+  const excluirCredito = async (id) => {
+    await api.excluirCredito(id);
+    await recarregar();
+  };
+
   const marcarCreditosVistos = async (viagemId) => {
     try {
       await api.marcarCreditosVistos(viagemId);
@@ -159,6 +164,7 @@ export function DataProvider({ children }) {
         atualizarDataFimViagem,
         excluirViagem,
         editarCredito,
+        excluirCredito,
         marcarCreditosVistos,
       }}
     >

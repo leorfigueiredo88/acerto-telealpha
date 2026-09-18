@@ -147,7 +147,7 @@ function ParticipanteBadge({ status }) {
 }
 
 /* Uma linha de crédito (diária/outro repasse) lançado para o colaborador */
-function LinhaCredito({ credito, onConfirmar, onEditar }) {
+function LinhaCredito({ credito, onConfirmar, onEditar, onExcluir }) {
   const cfg = TIPO_CREDITO_CFG[credito.tipo];
   return (
     <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-3.5">
@@ -172,6 +172,12 @@ function LinhaCredito({ credito, onConfirmar, onEditar }) {
         <button onClick={() => onEditar(credito)} title="Editar valor lançado"
           className="shrink-0 rounded-lg border border-stone-200 p-1.5 text-stone-400 transition hover:border-sky-300 hover:text-accent">
           <Pencil size={14} />
+        </button>
+      )}
+      {onExcluir && (
+        <button onClick={() => onExcluir(credito)} title="Excluir crédito"
+          className="shrink-0 rounded-lg border border-stone-200 p-1.5 text-stone-400 transition hover:border-red-300 hover:text-red-600">
+          <Trash2 size={14} />
         </button>
       )}
       {onConfirmar && credito.confirmado !== true && (
@@ -1373,7 +1379,7 @@ function ModalEditarCredito({ credito, colaborador, onFechar, onSalvar }) {
 }
 
 /* Card de acerto individual de um participante, dentro do detalhe da viagem (gestor) */
-function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirDespesa, onLancarCredito, onFechar, onReabrir, onVerRelatorio, onEditarCredito, onExcluirDespesa }) {
+function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirDespesa, onLancarCredito, onFechar, onReabrir, onVerRelatorio, onEditarCredito, onExcluirDespesa, onExcluirCredito }) {
   const colab = userById(participante.usuarioId);
   const pend = despesas.filter((d) => d.status === "pendente").length;
   const totalDespesas = despesas.filter((d) => d.status === "aprovado" || d.status === "pago").reduce((a, d) => a + d.valor, 0);
@@ -1430,7 +1436,7 @@ function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirD
       </div>
       {creditos.length > 0 && (
         <div className="mt-2 space-y-1.5">
-          {creditos.map((c) => <LinhaCredito key={c.id} credito={c} onEditar={onEditarCredito} />)}
+          {creditos.map((c) => <LinhaCredito key={c.id} credito={c} onEditar={onEditarCredito} onExcluir={onExcluirCredito} />)}
         </div>
       )}
 
@@ -1470,7 +1476,7 @@ function PainelParticipante({ viagem, participante, despesas, creditos, onAbrirD
 /* ============================================================
    GESTOR — VIEW PRINCIPAL
    ============================================================ */
-function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos, setCreditos, usuarios, setUsuarios, toast, onDecidir, onCriarViagem, onLancarCredito, onFecharParticipante, onReabrirParticipante, onCriarColaborador, onRedefinirSenha, onDefinirStatusColaborador, onIncluirParticipante, onMarcarCreditosVistos, onAtualizarDataFimViagem, onExcluirViagem, onEditarCredito, onExcluirDespesa }) {
+function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos, setCreditos, usuarios, setUsuarios, toast, onDecidir, onCriarViagem, onLancarCredito, onFecharParticipante, onReabrirParticipante, onCriarColaborador, onRedefinirSenha, onDefinirStatusColaborador, onIncluirParticipante, onMarcarCreditosVistos, onAtualizarDataFimViagem, onExcluirViagem, onEditarCredito, onExcluirDespesa, onExcluirCredito }) {
   const [tab, setTab] = useState("viagens");
   const [sel, setSel] = useState(null);
   const [viagemAberta, setViagemAberta] = useState(null);
@@ -1706,6 +1712,24 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
     toast.show("Crédito atualizado — aguardando nova confirmação do colaborador");
   };
 
+  const excluirCredito = async (credito) => {
+    const cfg = TIPO_CREDITO_CFG[credito.tipo];
+    const confirmado = window.confirm(`Excluir o crédito "${cfg.label}" (${brl(credito.valor)})? Essa ação não pode ser desfeita.`);
+    if (!confirmado) return;
+
+    if (onExcluirCredito) {
+      try {
+        await onExcluirCredito(credito.id);
+        toast.show("Crédito excluído");
+      } catch (e) {
+        toast.show(`Erro ao excluir: ${e.message}`);
+      }
+      return;
+    }
+    setCreditos((cs) => cs.filter((c) => c.id !== credito.id));
+    toast.show("Crédito excluído");
+  };
+
   const abrirViagem = (viagemId) => {
     setViagemAberta(viagemId);
     if (onMarcarCreditosVistos) {
@@ -1831,7 +1855,8 @@ function GestorView({ user, despesas, setDespesas, viagens, setViagens, creditos
                   onReabrir={() => reabrirParticipante(v.id, p.usuarioId, userById(p.usuarioId)?.nome)}
                   onVerRelatorio={() => setRelatorioDe({ viagemId: v.id, usuarioId: p.usuarioId })}
                   onEditarCredito={(credito) => setEditandoCredito(credito)}
-                  onExcluirDespesa={excluirDespesa} />
+                  onExcluirDespesa={excluirDespesa}
+                  onExcluirCredito={excluirCredito} />
               ))}
             </div>
 
@@ -2363,6 +2388,11 @@ function AppReal() {
     await carregarDados();
   };
 
+  const excluirCredito = async (creditoId) => {
+    await api.excluirCredito(creditoId);
+    await carregarDados();
+  };
+
   const marcarCreditosVistos = async (viagemId) => {
     try {
       await api.marcarCreditosVistos(viagemId);
@@ -2436,7 +2466,7 @@ function AppReal() {
             onRedefinirSenha={redefinirSenha} onDefinirStatusColaborador={definirStatusColaborador}
             onIncluirParticipante={incluirParticipante} onMarcarCreditosVistos={marcarCreditosVistos}
             onAtualizarDataFimViagem={atualizarDataFimViagem} onExcluirViagem={excluirViagem} onEditarCredito={editarCredito}
-            onExcluirDespesa={excluirDespesa} />
+            onExcluirDespesa={excluirDespesa} onExcluirCredito={excluirCredito} />
         : <ColaboradorView user={perfil} despesas={despesas} viagens={viagens} creditos={creditos}
             addDespesa={addDespesa} onEditarDespesa={editarDespesa} onConfirmarCredito={confirmarCredito} toast={toast} />}
       <Toast msg={toastMsg} />

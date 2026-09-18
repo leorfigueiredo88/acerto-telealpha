@@ -294,6 +294,16 @@ export async function confirmarCredito(id, confirmado) {
   if (error) throw error;
 }
 
+// Gestor exclui um crédito lançado (ex.: lançou errado). Sem RPC —
+// depende só da policy de DELETE em creditos_viagem.
+export async function excluirCredito(id) {
+  const { data, error } = await supabase.from("creditos_viagem").delete().eq("id", id).select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error("Não foi possível excluir o crédito — confira se você está logado como gestor.");
+  }
+}
+
 // Gestor "vê" as confirmações/contestações de crédito de uma viagem —
 // derruba o indicador de notificação (não usa RPC: a policy de UPDATE
 // de creditos_viagem para gestor já cobre essa coluna).

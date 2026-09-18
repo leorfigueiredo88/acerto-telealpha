@@ -2,14 +2,14 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { useData } from "../context/DataContext";
-import { cores, brl, fontes } from "../theme";
+import { cores, brl, fontes, TIPO_CREDITO_CFG } from "../theme";
 import { alertar } from "../lib/alertar";
 import { ParticipanteBadge } from "./Badge";
 import LinhaDespesa from "./LinhaDespesa";
 import LinhaCredito from "./LinhaCredito";
 
 export default function PainelParticipante({ viagem, participante, onAbrirDespesa, onLancarCredito, onVerRelatorio, onEditarCredito }) {
-  const { despesas, creditos, usuarioPorId, fecharAcertoParticipante, reabrirAcertoParticipante, excluirDespesa } = useData();
+  const { despesas, creditos, usuarioPorId, fecharAcertoParticipante, reabrirAcertoParticipante, excluirDespesa, excluirCredito } = useData();
   const [fechando, setFechando] = useState(false);
   const [reabrindo, setReabrindo] = useState(false);
 
@@ -56,6 +56,24 @@ export default function PainelParticipante({ viagem, participante, onAbrirDespes
             alertar("Não foi possível reabrir", e.message);
           } finally {
             setReabrindo(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  const confirmarExclusaoCredito = (credito) => {
+    const cfg = TIPO_CREDITO_CFG[credito.tipo];
+    alertar("Excluir crédito", `Excluir o crédito "${cfg.label}" (${brl(credito.valor)}) de ${colab?.nome}? Essa ação não pode ser desfeita.`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await excluirCredito(credito.id);
+          } catch (e) {
+            alertar("Não foi possível excluir", e.message);
           }
         },
       },
@@ -130,7 +148,7 @@ export default function PainelParticipante({ viagem, participante, onAbrirDespes
       </View>
       {meusCreditos.length > 0 && (
         <View style={{ gap: 6, marginTop: 6 }}>
-          {meusCreditos.map((c) => <LinhaCredito key={c.id} credito={c} onEditar={onEditarCredito} />)}
+          {meusCreditos.map((c) => <LinhaCredito key={c.id} credito={c} onEditar={onEditarCredito} onExcluir={confirmarExclusaoCredito} />)}
         </View>
       )}
 

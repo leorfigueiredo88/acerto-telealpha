@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { cores, brl, TIPO_CREDITO_CFG, fontes } from "../theme";
 
-export default function LinhaCredito({ credito, onConfirmar, onEditar }) {
+export default function LinhaCredito({ credito, onConfirmar, onEditar, onExcluir }) {
   const cfg = TIPO_CREDITO_CFG[credito.tipo];
 
   return (
@@ -27,6 +27,11 @@ export default function LinhaCredito({ credito, onConfirmar, onEditar }) {
       {onEditar && (
         <Pressable onPress={() => onEditar(credito)} style={styles.botaoIcone}>
           <MaterialCommunityIcons name="pencil-outline" size={16} color={cores.textoFraco} />
+        </Pressable>
+      )}
+      {onExcluir && (
+        <Pressable onPress={() => onExcluir(credito)} style={styles.botaoIcone}>
+          <MaterialCommunityIcons name="trash-can-outline" size={16} color={cores.textoFraco} />
         </Pressable>
       )}
       {onConfirmar && credito.confirmado !== true && (
