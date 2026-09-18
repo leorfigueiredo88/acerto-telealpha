@@ -226,7 +226,7 @@ function ComprovanteTermico({ despesa, compacto }) {
 function Toast({ msg }) {
   if (!msg) return null;
   return (
-    <div className="no-print fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white shadow-lg">
+    <div className="no-print fixed bottom-6 left-1/2 z-70 -translate-x-1/2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white shadow-lg">
       {msg}
     </div>
   );
@@ -764,7 +764,7 @@ function ModalImagemAmpliada({ url, despesa, onFechar }) {
   };
 
   return createPortal(
-    <div className="no-print fixed inset-0 z-[70] flex items-center justify-center bg-stone-900/85 p-4" onClick={onFechar}>
+    <div className="no-print fixed inset-0 z-70 flex items-center justify-center bg-stone-900/85 p-4" onClick={onFechar}>
       <div className="absolute right-4 top-4 flex gap-2">
         <button onClick={(e) => { e.stopPropagation(); baixar(); }} disabled={baixando}
           className="flex items-center gap-1.5 rounded-lg bg-white/95 px-3.5 py-2 text-sm font-semibold text-stone-800 shadow hover:bg-white disabled:opacity-60">
@@ -903,7 +903,7 @@ function ModalNovaViagem({ onFechar, onCriar }) {
                 participantes.includes(c.id) ? "border-sky-300 bg-sky-50" : "border-stone-200 hover:bg-stone-50"
               }`}>
                 <input type="checkbox" checked={participantes.includes(c.id)} onChange={() => toggle(c.id)}
-                  className="h-4 w-4 accent-[#1B7EAD]" />
+                  className="h-4 w-4 accent-accent" />
                 <span className="font-medium text-stone-800">{c.nome}</span>
                 <span className="ml-auto text-xs text-stone-400">{c.email}</span>
               </label>
@@ -964,7 +964,7 @@ function ModalIncluirParticipante({ colaboradoresDisponiveis, onFechar, onInclui
                   selecionados.includes(c.id) ? "border-sky-300 bg-sky-50" : "border-stone-200 hover:bg-stone-50"
                 }`}>
                   <input type="checkbox" checked={selecionados.includes(c.id)} onChange={() => toggle(c.id)}
-                    className="h-4 w-4 accent-[#1B7EAD]" />
+                    className="h-4 w-4 accent-accent" />
                   <span className="font-medium text-stone-800">{c.nome}</span>
                   <span className="ml-auto text-xs text-stone-400">{c.email}</span>
                 </label>
@@ -1120,7 +1120,7 @@ function RelatorioAcerto({ viagem, colaborador, despesas, creditos, gestor, onFe
   const saldo = totalDespesas - totalCreditos;
 
   return createPortal(
-    <div id="relatorio-portal" className="fixed inset-0 z-[60] overflow-y-auto bg-stone-900/60 p-2 sm:p-6" onClick={onFechar}>
+    <div id="relatorio-portal" className="fixed inset-0 z-60 overflow-y-auto bg-stone-900/60 p-2 sm:p-6" onClick={onFechar}>
       <div onClick={(e) => e.stopPropagation()} className="mx-auto max-w-3xl">
         <div className="no-print mb-3 flex items-center justify-between rounded-xl bg-white/95 px-4 py-3 shadow">
           <p className="text-sm font-semibold text-stone-800">Prévia do relatório de acerto</p>
@@ -2156,7 +2156,7 @@ function TelaTrocarSenha({ onTrocar, erro }) {
   };
 
   return (
-    <div className="no-print fixed inset-0 z-[100] flex items-center justify-center bg-stone-900/60 px-4">
+    <div className="no-print fixed inset-0 z-100 flex items-center justify-center bg-stone-900/60 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
         <div className="mb-5 text-center">
           <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-sky-50 text-accent">
